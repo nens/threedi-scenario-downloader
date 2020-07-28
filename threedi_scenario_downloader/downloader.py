@@ -408,11 +408,17 @@ def download_raw_results(scenario_uuid, pathname=None):
     logging.debug("Start downloading raw results: {}".format(url))
     download_file(url, pathname)
 
-    
+
 def download_aggregated_results(scenario_uuid, pathname=None):
-    url = dl.get_aggregation_netcdf_link(scenario_uuid)
+    url = get_aggregation_netcdf_link(scenario_uuid)
     logging.debug("Start downloading aggregated results: {}".format(url))
-    dl.download_file(url, pathname)
+    download_file(url, pathname)
+
+
+def download_logging_results(scenario_uuid, pathname=None):
+    url = get_logging_link(scenario_uuid)
+    logging.debug("Start downloading logging results: {}".format(url))
+    download_file(url, pathname)
     
 
 def download_grid_administration(scenario_uuid, pathname=None):
