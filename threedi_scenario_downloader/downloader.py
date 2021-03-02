@@ -37,11 +37,11 @@ def get_headers():
     return REQUESTS_HEADERS
 
 
-def set_headers(username, password):
-    """set Lizard login credentials"""
+def set_headers(api_key):
+    """set Lizard login credentials using an lizard api key"""
 
-    REQUESTS_HEADERS["username"] = username
-    REQUESTS_HEADERS["password"] = password
+    REQUESTS_HEADERS["username"] = "__key__"
+    REQUESTS_HEADERS["password"] = api_key
     REQUESTS_HEADERS["Content-Type"] = "application/json"
 
 
