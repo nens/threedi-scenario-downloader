@@ -9,9 +9,9 @@ import requests
 
 LIZARD_URL = "https://demo.lizard.net/api/v3/"
 RESULT_LIMIT = 10
-REQUESTS_HEADERS = {}
 
 log = logging.getLogger()
+AUTH = {}
 
 SCENARIO_FILTERS = {
     "name": "name",
@@ -31,18 +31,12 @@ def set_logging_level(level):
     log.level = level
 
 
-def get_headers():
-    """return headers"""
-
-    return REQUESTS_HEADERS
+def set_api_key(api_key):
+    AUTH["api_key"] = api_key
 
 
-def set_headers(username, password):
-    """set Lizard login credentials"""
-
-    REQUESTS_HEADERS["username"] = username
-    REQUESTS_HEADERS["password"] = password
-    REQUESTS_HEADERS["Content-Type"] = "application/json"
+def get_api_key():
+    return AUTH["api_key"]
 
 
 def find_scenarios(limit=RESULT_LIMIT, **kwargs):
@@ -54,7 +48,7 @@ def find_scenarios(limit=RESULT_LIMIT, **kwargs):
         api_filter = SCENARIO_FILTERS[key]
         payload[api_filter] = value
 
-    r = requests.get(url=url, headers=get_headers(), params=payload)
+    r = requests.get(url=url, auth=("__key__", get_api_key()), params=payload)
     r.raise_for_status()
     return r.json()["results"]
 
@@ -64,7 +58,7 @@ def find_scenarios_by_model_slug(model_uuid, limit=RESULT_LIMIT):
 
     url = "{}scenarios/".format(LIZARD_URL)
     payload = {"model_name__icontains": model_uuid, "limit": limit}
-    r = requests.get(url=url, headers=get_headers(), params=payload)
+    r = requests.get(url=url, auth=("__key__", get_api_key()), params=payload)
     r.raise_for_status()
     return r.json()["results"]
 
@@ -73,7 +67,7 @@ def find_scenarios_by_name(name, limit=RESULT_LIMIT):
     """return json containing scenarios based on name"""
     url = "{}scenarios/".format(LIZARD_URL)
     payload = {"name__icontains": name, "limit": limit}
-    r = requests.get(url=url, headers=get_headers(), params=payload)
+    r = requests.get(url=url, auth=("__key__", get_api_key()), params=payload)
     r.raise_for_status()
     return r.json()["results"]
 
@@ -81,7 +75,8 @@ def find_scenarios_by_name(name, limit=RESULT_LIMIT):
 def get_netcdf_link(scenario_uuid):
     """return url to raw 3Di results"""
     r = requests.get(
-        url="{}scenarios/{}".format(LIZARD_URL, scenario_uuid), headers=get_headers()
+        url="{}scenarios/{}".format(LIZARD_URL, scenario_uuid),
+        auth=("__key__", get_api_key()),
     )
     r.raise_for_status()
     for result in r.json()["result_set"]:
@@ -93,7 +88,8 @@ def get_netcdf_link(scenario_uuid):
 def get_aggregation_netcdf_link(scenario_uuid):
     """return url to raw 3Di results"""
     r = requests.get(
-        url="{}scenarios/{}".format(LIZARD_URL, scenario_uuid), headers=get_headers()
+        url="{}scenarios/{}".format(LIZARD_URL, scenario_uuid),
+        auth=("__key__", get_api_key()),
     )
     r.raise_for_status()
     for result in r.json()["result_set"]:
@@ -105,7 +101,8 @@ def get_aggregation_netcdf_link(scenario_uuid):
 def get_gridadmin_link(scenario_uuid):
     """return url to gridadministration"""
     r = requests.get(
-        url="{}scenarios/{}".format(LIZARD_URL, scenario_uuid), headers=get_headers()
+        url="{}scenarios/{}".format(LIZARD_URL, scenario_uuid),
+        auth=("__key__", get_api_key()),
     )
     r.raise_for_status()
     for result in r.json()["result_set"]:
@@ -117,7 +114,8 @@ def get_gridadmin_link(scenario_uuid):
 def get_logging_link(scenario_uuid):
     """return url to zipped logging"""
     r = requests.get(
-        url="{}scenarios/{}".format(LIZARD_URL, scenario_uuid), headers=get_headers()
+        url="{}scenarios/{}".format(LIZARD_URL, scenario_uuid),
+        auth=("__key__", get_api_key()),
     )
     r.raise_for_status()
     for result in r.json()["result_set"]:
@@ -130,7 +128,8 @@ def get_raster(scenario_uuid, raster_code):
     """return json of raster based on scenario uuid and raster type"""
 
     r = requests.get(
-        url="{}scenarios/{}".format(LIZARD_URL, scenario_uuid), headers=get_headers()
+        url="{}scenarios/{}".format(LIZARD_URL, scenario_uuid),
+        auth=("__key__", get_api_key()),
     )
     r.raise_for_status()
     for result in r.json()["result_set"]:
@@ -178,7 +177,7 @@ def create_raster_task(
             "format": "geotiff",
             "async": "true",
         }
-    r = requests.get(url=url, headers=get_headers(), params=payload)
+    r = requests.get(url=url, auth=("__key__", get_api_key()), params=payload)
     r.raise_for_status()
     return r.json()
 
@@ -188,7 +187,7 @@ def get_task_status(task_uuid):
     """return status of task"""
     url = "{}tasks/{}/".format(LIZARD_URL, task_uuid)
     try:
-        r = requests.get(url=url, headers=get_headers())
+        r = requests.get(url=url, auth=("__key__", get_api_key()))
         r.raise_for_status()
         return r.json()["task_status"]
     except:
@@ -199,7 +198,7 @@ def get_task_download_url(task_uuid):
     """return url of successful task"""
     if get_task_status(task_uuid) == "SUCCESS":
         url = "{}tasks/{}/".format(LIZARD_URL, task_uuid)
-        r = requests.get(url=url, headers=get_headers())
+        r = requests.get(url=url, auth=("__key__", get_api_key()))
         r.raise_for_status()
         return r.json()["result_url"]
     # What to do if task is not a success?
@@ -208,9 +207,7 @@ def get_task_download_url(task_uuid):
 def download_file(url, path):
     """download url to specified path"""
     logging.debug("Start downloading file: {}".format(url))
-    r = requests.get(
-        url, auth=(get_headers()["username"], get_headers()["password"]), stream=True
-    )
+    r = requests.get(url, auth=("__key__", get_api_key()), stream=True)
     r.raise_for_status()
     with open(path, "wb") as file:
         for chunk in r.iter_content(1024 * 1024 * 10):
@@ -419,14 +416,17 @@ def clear_inbox():
     """delete all messages from Lizard inbox"""
     url = "{}inbox/".format(LIZARD_URL)
     r = requests.get(
-        url=url, headers=get_headers(), params={"limit": RESULT_LIMIT}, timeout=10
+        url=url,
+        auth=("__key__", get_api_key()),
+        params={"limit": RESULT_LIMIT},
+        timeout=10,
     )
     r.raise_for_status()
     messages = r.json()["results"]
     for msg in messages:
         msg_id = msg["id"]
         read_url = "{}inbox/{}/read/".format(LIZARD_URL, msg_id)
-        r = requests.post(url=read_url, headers=get_headers(), timeout=10)
+        r = requests.post(url=read_url, auth=("__key__", get_api_key()), timeout=10)
     return True
 
 
@@ -595,7 +595,7 @@ def get_raster_from_json(scenario, raster_code):
 
 def request_json_from_url(url, params=None):
     """retrieve json object from url"""
-    r = requests.get(url=url, headers=get_headers(), params=params)
+    r = requests.get(url=url, auth=("__key__", get_api_key()), params=params)
     r.raise_for_status()
     if r.status_code == requests.codes.ok:
         return r.json()
