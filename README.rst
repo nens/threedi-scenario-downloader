@@ -18,9 +18,9 @@ Start importing the package::
   
   $ from threedi_scenario_downloader import downloader as dl
 
-Set headers for authentication to the Lizard API::
+Set the API key for authentication to the Lizard API (you can get an API key here: <your portal>.lizard.net/management/#/personal_api_keys)::
   
-  $ dl.set_headers("your_username","your_password")
+  $ dl.set_api_key("INSERT YOUR API KEY HERE")
 
 Find scenarios based on a model slug (unique model identifier) or scenario name. Returns last 10 matching results unless told otherwise::
 
