@@ -5,7 +5,9 @@ Changelog of threedi-scenario-downloader
 0.13 (unreleased)
 -----------------
 
-- Nothing changed yet.
+- Added batch functionality to raster download
+
+- Added resume batch function
 
 
 0.12 (2020-02-18)
