@@ -2,10 +2,12 @@
 """The downloader part of the threedi_scenario_downloader supplies the user with often used functionality to look up and export 3Di results using the Lizard API"""
 from datetime import datetime
 from urllib.parse import urlparse
+from urllib.error import HTTPError
 from time import sleep
 import logging
 import os
 import requests
+import csv
 
 LIZARD_URL = "https://demo.lizard.net/api/v3/"
 RESULT_LIMIT = 10
@@ -21,7 +23,9 @@ SCENARIO_FILTERS = {
     "model_revision": "model_revision",
     "model_name": "model_name__icontains",
     "organisation": "organisation__icontains",
+    "organisation__unique_id": "organisation__unique_id",
     "username": "username__icontains",
+    "offset": "offset",
 }
 
 
@@ -229,64 +233,183 @@ def download_task(task_uuid, pathname=None):
 
 def download_raster(
     scenario,
-    raster_code,
-    target_srs,
-    resolution,
+    raster_code=None,
+    target_srs=None,
+    resolution=None,
     bounds=None,
     bounds_srs=None,
     time=None,
     pathname=None,
+    is_threedi_scenario=True,  # For lizard rasters that are not a Threedi result.
+    export_task_csv=None,
 ):
     """
-    download raster
+    Download raster.
+    To download multiple rasters at the same time, simply pass the required input parameters as list. 
+    Scenario and pathname should be of same length. Other paramerts can be tuple to apply the same settings to all rasters.
     """
-    if type(scenario) is str:
-        # assume uuid
-        raster = get_raster(scenario, raster_code)
-    elif type(scenario) is dict:
-        # assume json object
-        raster = get_raster_from_json(scenario, raster_code)
-    else:
-        log.debug("Invalid scenario: supply a json object or uuid string")
+    # If task is called for single raster, prepare list.
+    def transform_to_list(var, length=1):
+        """Transform input to list if for instance only one input is given"""
+        if type(var) is list:
+            return var
+        else:
+            if type(var) is tuple:
+                return list(var) * length
+            else:  # type(var) in (str, dict, int, type(None), bool, float):
+                return [var] * length
 
-    task = create_raster_task(
-        raster,
-        target_srs,
-        resolution=resolution,
-        bounds=bounds,
-        bounds_srs=bounds_srs,
-        time=time,
+    # Transform input parameters to list
+    scenario_list = transform_to_list(var=scenario)
+    raster_code_list = transform_to_list(var=raster_code, length=len(scenario_list))
+    target_srs_list = transform_to_list(var=target_srs, length=len(scenario_list))
+
+    bounds_list = transform_to_list(var=bounds, length=len(scenario_list))
+    bounds_srs_list = transform_to_list(var=bounds_srs, length=len(scenario_list))
+    resolution_list = transform_to_list(var=resolution, length=len(scenario_list))
+    time_list = transform_to_list(var=time, length=len(scenario_list))
+    pathname_list = transform_to_list(var=pathname)
+    is_threedi_scenario_list = transform_to_list(
+        var=is_threedi_scenario, length=len(scenario_list)
     )
-    task_uuid = task["task_id"]
 
-    log.debug("Start waiting for task {} to finish".format(task_uuid))
+    # Helper parameters.
+    processed_list = transform_to_list(var=False, length=len(scenario_list))
+    task_id_list = transform_to_list(var=None, length=len(scenario_list))
+    task_url_list = transform_to_list(var=None, length=len(scenario_list))
 
-    task_status = get_task_status(task_uuid)
-    while (
-        task_status == "PENDING"
-        or task_status == "UNKNOWN"
-        or task_status == "STARTED"
-        or task_status == "RETRY"
+    # Wrong input error
+    if len(scenario_list) != len(pathname_list):
+        logging.debug("Scenarios and output should be of same length")
+        raise ValueError("scenario_list and pathname_list are of different length")
+
+    tasks = []
+    # Create tasks
+    for (
+        (index, scenario),
+        raster_code,
+        target_srs,
+        bounds,
+        bounds_srs,
+        resolution,
+        time,
+        is_threedi_scenario,
+    ) in zip(
+        enumerate(scenario_list),
+        raster_code_list,
+        target_srs_list,
+        bounds_list,
+        bounds_srs_list,
+        resolution_list,
+        time_list,
+        is_threedi_scenario_list,
     ):
-        sleep(5)
-        log.debug("Still waiting for task {}".format(task_uuid))
-        task_status = get_task_status(task_uuid)
+        if is_threedi_scenario:
+            if type(scenario) is str:
+                # assume uuid
+                raster = get_raster(scenario, raster_code)
+            elif type(scenario) is dict:
+                # assume json object
+                raster = get_raster_from_json(scenario, raster_code)
+            else:
+                raise ValueError(
+                    "Invalid scenario: supply a json object or uuid string"
+                )
+                logging.debug("Invalid scenario: supply a json object or uuid string")
+        else:
+            # If no bounds are passed the function will probably crash.
+            if (type(scenario) is str) and (bounds is not None):
+                raster = {}
+                raster["uuid"] = scenario
+            else:
+                # print("Invalid scenario: supply a uuid string and spatial bounds. Scenario: {}".format(scenario))
+                logging.debug(
+                    "Invalid scenario: supply a uuid string and spatial bounds"
+                )
+        # Send task to lizard
+        logging.debug("Creating task with the following parameters:")
+        logging.debug("raster: {}".format(raster))
+        logging.debug("target_srs: {}".format(target_srs))
+        logging.debug("resolution: {}".format(resolution))
+        logging.debug("bounds: {}".format(bounds))
+        logging.debug("bounds_srs: {}".format(bounds_srs))
+        logging.debug("time: {}".format(time))
+        task = create_raster_task(
+            raster,
+            target_srs,
+            resolution=resolution,
+            bounds=bounds,
+            bounds_srs=bounds_srs,
+            time=time,
+        )
+        task_id_list[index] = task["task_id"]
+        task_url_list[index] = task["url"]
+        tasks.append(task)
 
-    if get_task_status(task_uuid) == "SUCCESS":
-        # task is a succes, return download url
-        log.debug(
-            "Task succeeded, start downloading url: {}".format(
-                get_task_download_url(task_uuid)
+    if export_task_csv is not None:
+        logging.debug("Exporting tasks to csv")
+
+        task_export = []
+
+        # Create a list with task url's and pathnames
+        for (index, task_id), task_url, pathname in zip(
+            enumerate(task_id_list), task_url_list, pathname_list
+        ):
+            task_export.append({"uuid": task_id, "url": task_url, "pathname": pathname})
+
+        logging.debug("task_export: {}".format(task_export))
+        with open(export_task_csv, "w", newline="") as f:
+
+            # using csv.writer method from CSV package
+            field_names = ["uuid", "url", "pathname"]
+            writer = csv.DictWriter(
+                f, field_names, delimiter=",", quotechar="|", quoting=csv.QUOTE_MINIMAL
             )
-        )
-        print(
-            "Task succeeded, start downloading url: {}".format(
-                get_task_download_url(task_uuid)
-            )
-        )
-        download_task(task_uuid, pathname)
-    else:
-        log.debug("Task failed, status was: {}".format(task_status))
+            writer.writeheader()
+            writer.writerows(task_export)
+
+    # Check status of task and download
+    while not all(processed_list):
+        for (index, task_uuid), pathname, processed in zip(
+            enumerate(task_id_list), pathname_list, processed_list
+        ):
+            if not processed:
+
+                task_status = get_task_status(task_uuid)
+
+                if task_status == "SUCCESS":
+                    # task is a succes, return download url
+                    try:
+                        logging.debug(
+                            "Task succeeded, start downloading url: {}".format(
+                                get_task_download_url(task_uuid)
+                            )
+                        )
+                        logging.debug(
+                            "Remaining tasks: {}".format(
+                                processed_list.count(False) - 1
+                            )
+                        )
+                        download_task(task_uuid, pathname)
+                        processed_list[index] = True
+
+                    except HTTPError as err:
+                        if err.code == 503:
+                            logging.debug(
+                                "503 Server Error: Lizard has lost it. Let's ignore this."
+                            )
+                            task_status = "UNKNOWN"
+                        else:
+                            raise
+
+                elif task_status in ("PENDING", "UNKNOWN", "STARTED", "RETRY"):
+                    pass
+                else:
+                    logging.debug(
+                        "Task {} failed, status was: {}".format(task_uuid, task_status)
+                    )
+                    processed_list[index] = True
+        sleep(5)
 
 
 def download_maximum_waterdepth_raster(
@@ -469,10 +592,10 @@ def get_raster_link(
     task = create_raster_task(raster, target_srs, resolution, bounds, bounds_srs, time)
     task_uuid = task["task_id"]
 
-    log.debug("Start waiting for task {} to finish".format(task_uuid))
+    logging.debug("Start waiting for task {} to finish".format(task_uuid))
     task_status = get_task_status(task_uuid)
     while task_status == "PENDING":
-        log.debug("Still waiting for task {}".format(task_uuid))
+        logging.debug("Still waiting for task {}".format(task_uuid))
         sleep(5)
         task_status = get_task_status(task_uuid)
 
@@ -481,7 +604,7 @@ def get_raster_link(
         download_url = get_task_download_url(task_uuid)
         return download_url
     else:
-        log.debug("Task failed")
+        logging.debug("Task failed")
         return None
 
 
@@ -599,3 +722,53 @@ def request_json_from_url(url, params=None):
     r.raise_for_status()
     if r.status_code == requests.codes.ok:
         return r.json()
+
+
+def resume_download_tasks(task_file, overwrite=False):
+    """read csv with tasks and resume downloading the succesfull tasks"""
+
+    processed_tasks = []
+    unprocessed_tasks = []
+
+    # Read tasks from file
+    with open(task_file, newline="") as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            unprocessed_tasks.append(row)
+            task_url = row["url"]
+            logging.debug("Reading task file, line: {}".format(task_url))
+
+    while len(unprocessed_tasks) > 0:
+        for task in unprocessed_tasks:
+            uuid = task["uuid"]
+            pathname = task["pathname"]
+
+            task_status = get_task_status(uuid)
+
+            if task_status == "SUCCESS":
+                # Task succesfull, check if file already exists
+
+                # Download if it doesn't exist, or if it do
+                if not os.path.isfile(pathname) or overwrite:
+                    try:
+                        download_task(uuid, pathname)
+                    except HTTPError as err:
+                        if err.code == 503:
+                            logging.debug(
+                                "503 Server Error: Lizard has lost it. Let's ignore this."
+                            )
+                            task_status = "UNKNOWN"
+                        else:
+                            raise
+
+                # move task to processed list
+                processed_tasks.append(task)
+                unprocessed_tasks.remove(task)
+
+            elif task_status in ("PENDING", "UNKNOWN", "STARTED", "RETRY"):
+                pass
+            else:
+                logging.debug(
+                    "Task {} failed, status was: {}".format(uuid, task_status)
+                )
+        sleep(5)
