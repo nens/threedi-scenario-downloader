@@ -2,7 +2,7 @@ Changelog of threedi-scenario-downloader
 ===================================================
 
 
-0.13 (unreleased)
+0.13 (2021-07-22)
 -----------------
 
 - Added batch functionality to raster download
