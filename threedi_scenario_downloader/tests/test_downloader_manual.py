@@ -102,6 +102,43 @@ def test_get_raster_link():
     assert download_url is not None
 
 
+def test_download_raster():
+    file_path = "threedi_scenario_downloader/tests/testdata/max_wd.tif"
+
+    downloader.download_raster(
+        SCENARIO_UUID,
+        "depth-max-dtri",
+        "EPSG:4326",
+        10,
+        bounds=None,
+        time=None,
+        pathname=file_path,
+    )
+    assert os.path.isfile(file_path)
+
+
+def test_download_raster_batch():
+    scenario_uuids = [SCENARIO_UUID, SCENARIO_UUID]
+
+    file_paths = [
+        "threedi_scenario_downloader/tests/testdata/max_wd_batch_1.tif",
+        "threedi_scenario_downloader/tests/testdata/max_wd_batch_2.tif",
+    ]
+
+    downloader.download_raster(
+        scenario_uuids,
+        "depth-max-dtri",
+        "EPSG:4326",
+        10,
+        bounds=None,
+        time=None,
+        pathname=file_paths,
+    )
+
+    for file_path in file_paths:
+        assert os.path.isfile(file_path)
+
+
 # def test_get_static_rasters_links():
 #    scenario = downloader.find_scenarios_by_name("lizardapitest")[0]
 #    static_rasters, _ = downloader.rasters_in_scenario(scenario)
