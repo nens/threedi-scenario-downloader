@@ -2,6 +2,12 @@ Changelog of threedi-scenario-downloader
 ===================================================
 
 
+0.15 (unreleased)
+-----------------
+
+- Nothing changed yet.
+
+
 0.14 (2021-08-12)
 -----------------
 
