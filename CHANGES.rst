@@ -5,7 +5,7 @@ Changelog of threedi-scenario-downloader
 0.15 (unreleased)
 -----------------
 
-- Nothing changed yet.
+- Bump bleach to 3.1.4
 
 
 0.14 (2021-08-12)
