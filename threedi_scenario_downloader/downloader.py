@@ -524,24 +524,28 @@ def download_precipitation_raster(
 
 
 def download_raw_results(scenario_uuid, pathname=None):
+    """downloads the 3Di NetCDF file of the supplied scenario"""
     url = get_netcdf_link(scenario_uuid)
     logging.debug("Start downloading raw results: {}".format(url))
     download_file(url, pathname)
 
 
 def download_aggregated_results(scenario_uuid, pathname=None):
+    """downloads the 3Di aggregated NetCDF file of the supplied scenario"""
     url = get_aggregation_netcdf_link(scenario_uuid)
     logging.debug("Start downloading aggregated results: {}".format(url))
     download_file(url, pathname)
 
 
 def download_logging_results(scenario_uuid, pathname=None):
+    """downloads the 3Di logging of the supplied scenario"""
     url = get_logging_link(scenario_uuid)
     logging.debug("Start downloading logging results: {}".format(url))
     download_file(url, pathname)
-    
+
 
 def download_grid_administration(scenario_uuid, pathname=None):
+    """downloads the 3Di grid administration (.h5 file) of the supplied scenario"""
     url = get_gridadmin_link(scenario_uuid)
     logging.debug("Start downloading grid administration: {}".format(url))
     download_file(url, pathname)
