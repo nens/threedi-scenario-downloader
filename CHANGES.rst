@@ -2,7 +2,7 @@ Changelog of threedi-scenario-downloader
 ===================================================
 
 
-0.14 (unreleased)
+0.14 (2021-08-12)
 -----------------
 
 - Added download aggregation NetCDF function
