@@ -312,10 +312,10 @@ def download_raster(
                 # assume json object
                 raster = get_raster_from_json(scenario, raster_code)
             else:
+                logging.debug("Invalid scenario: supply a json object or uuid string")
                 raise ValueError(
                     "Invalid scenario: supply a json object or uuid string"
                 )
-                logging.debug("Invalid scenario: supply a json object or uuid string")
         else:
             # If no bounds are passed the function will probably crash.
             if (type(scenario) is str) and (bounds is not None):

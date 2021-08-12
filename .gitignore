@@ -37,3 +37,4 @@ docker-compose.override.yml
 *.tif
 *.h5
 *.nc
+*.csv
