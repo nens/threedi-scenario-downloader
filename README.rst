@@ -27,11 +27,16 @@ here: <your portal>.lizard.net/management/#/personal_api_keys)::
 Find scenarios based on a model slug (unique model identifier) or scenario
 name. Returns last 10 matching results unless told otherwise::
 
-  >>> scenarios = dl.find_scenarios_by_model_slug("enter your model_uuid",limit=10)
+  >>> scenarios = dl.find_scenarios_by_model_slug("enter your model_uuid", limit=10)
 
 or::
 
-  >>> scenarios = dl.find_scenarios_by_name("my_first_scenario",limit=100)
+  >>> scenarios = dl.find_scenarios_by_name("my_first_scenario", limit=100)
+
+or if you have too many similarly-named scenarios, do a case-sensitive exact
+search::
+
+  >>> scenarios = dl.find_scenarios_by_exact_name("my_first_scenario", limit=100)
 
 Do you want to download the raw 3Di-results (.nc and .h5 files) of a specific
 scenario? Use the following methods::
@@ -61,6 +66,7 @@ well. If you want to delete these messages (due to bulk downloading for
 example), use the following method::
 
   >>> dl.clear_inbox()
+
 
 Installation
 ------------

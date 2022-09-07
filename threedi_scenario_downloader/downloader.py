@@ -76,6 +76,15 @@ def find_scenarios_by_name(name, limit=RESULT_LIMIT):
     return r.json()["results"]
 
 
+def find_scenarios_by_exact_name(name, limit=RESULT_LIMIT):
+    """return json containing scenarios based on exact name"""
+    url = "{}scenarios/".format(LIZARD_URL)
+    payload = {"name": name, "limit": limit}
+    r = requests.get(url=url, auth=("__key__", get_api_key()), params=payload)
+    r.raise_for_status()
+    return r.json()["results"]
+
+
 def get_netcdf_link(scenario_uuid):
     """return url to raw 3Di results"""
     r = requests.get(
