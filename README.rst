@@ -73,31 +73,27 @@ We can be installed with::
 Development installation of this project itself
 -----------------------------------------------
 
-We're installed with `pipenv <https://docs.pipenv.org/>`_, a handy wrapper
-around pip and virtualenv. Install that first with ``pip install
-pipenv``. Then run::
+We're installed with regular pip and virtualenv. Create a virtualenv and call pip::
 
-  $ PIPENV_VENV_IN_PROJECT=1 pipenv --three
-  $ pipenv install --dev
+  $ python3 -m venv .
+  $ bin/pip install -r requirements.txt
 
 In order to get nicely formatted python files without having to spend manual
 work on it, run the following command periodically::
 
-  $ pipenv run black threedi_scenario_downloader
+  $ bin/black threedi_scenario_downloader
 
 Run the tests regularly. This also checks with pyflakes, black and it reports
 coverage. Pure luxury::
 
-  $ pipenv run pytest
+  $ bin/pytest
 
-The tests are also run automatically `on travis-ci
-<https://travis-ci.com/nens/threedi-scenario-downloader>`_, you'll see it in
-the pull requests. There's also `coverage reporting
-<https://coveralls.io/github/nens/threedi-scenario-downloader>`_ on
-coveralls.io.
+The tests **used** to run on travis-ci.org, but we don't use that service
+anymore. Also, new releases were automatically added to pypi there. For now,
+contact Reinout when you need a new release.
 
 If you need a new dependency (like `requests`), add it in `setup.py` in
 `install_requires`. Afterwards, run install again to actuall install your
 dependency::
 
-  $ pipenv install --dev
+  $ bin/pip install -r requirements.txt
