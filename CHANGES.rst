@@ -2,7 +2,7 @@ Changelog of threedi-scenario-downloader
 ===================================================
 
 
-0.16 (unreleased)
+0.16 (2022-09-07)
 -----------------
 
 - Added ``find_scenarios_by_exact_name()`` function that doesn't do a case
