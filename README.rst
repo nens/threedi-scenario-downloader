@@ -13,46 +13,54 @@ Example methods are:
 - Find all scenarios model slug or scenario name.
 
 Examples
-========================================
+--------
+
 Start importing the package::
-  
-  $ from threedi_scenario_downloader import downloader as dl
 
-Set the API key for authentication to the Lizard API (you can get an API key here: <your portal>.lizard.net/management/#/personal_api_keys)::
-  
-  $ dl.set_api_key("INSERT YOUR API KEY HERE")
+  >>> from threedi_scenario_downloader import downloader as dl
 
-Find scenarios based on a model slug (unique model identifier) or scenario name. Returns last 10 matching results unless told otherwise::
+Set the API key for authentication to the Lizard API (you can get an API key
+here: <your portal>.lizard.net/management/#/personal_api_keys)::
 
-  $ scenarios = dl.find_scenarios_by_model_slug("enter your model_uuid",limit=10)
-  
-or::
+  >>> dl.set_api_key("INSERT YOUR API KEY HERE")
 
-  $ scenarios = dl.find_scenarios_by_name("my_first_scenario",limit=100)
+Find scenarios based on a model slug (unique model identifier) or scenario
+name. Returns last 10 matching results unless told otherwise::
 
-Do you want to download the raw 3Di-results (.nc and .h5 files) of a specific scenario? Use the following methods::
-
-  $ dl.download_raw_results("scenario_uuid")
-  $ dl.download_grid_administration("scenario_uuid")
-
+  >>> scenarios = dl.find_scenarios_by_model_slug("enter your model_uuid",limit=10)
 
 or::
 
-  $ dl.download_raw_results("scenario_uuid",pathname="save_under_different_name.nc")
-  $ dl.download_grid_administration("scenario_uuid",pathname="save_under_different_name.h5")
+  >>> scenarios = dl.find_scenarios_by_name("my_first_scenario",limit=100)
 
-Downloading (temporal) rasters of specific scenarios can be done using the following methods::
+Do you want to download the raw 3Di-results (.nc and .h5 files) of a specific
+scenario? Use the following methods::
 
-  $ dl.download_maximum_waterdepth_raster("scenario_uuid","EPSG:28992",10) 
+  >>> dl.download_raw_results("scenario_uuid")
+  >>> dl.download_grid_administration("scenario_uuid")
+
+or::
+
+  >>> dl.download_raw_results("scenario_uuid",pathname="save_under_different_name.nc")
+  >>> dl.download_grid_administration("scenario_uuid",pathname="save_under_different_name.h5")
+
+Downloading (temporal) rasters of specific scenarios can be done using the
+following methods::
+
+  >>> dl.download_maximum_waterdepth_raster("scenario_uuid","EPSG:28992",10)
   #download the full extent of the maximum waterdepth of the given scenario_uuid with a 10 meter resolution in the RD New/Amersfoort projection (EPSG:28992)
-  
-  $ dl.download_waterdepth_raster("scenario_uuid","EPSG:28992",10,"2019-01-01T02:00") 
+
+  >>> dl.download_waterdepth_raster("scenario_uuid","EPSG:28992",10,"2019-01-01T02:00")
   #download the full extend of the waterdepth at the supplied timestamp given scenario_uuid, on 10 meter resolution in the RD New/Amersfoort projection (EPSG:28992)
 
-The raster download methods creates a task for the API. Depending on the size and resolution it takes some time for the raster to be prepared. These methods will keep on checking if the raster is ready to be downloaded.
-When a raster is ready to be downloaded a message in the Lizard portal is created as well. If you want to delete these messages (due to bulk downloading for example), use the following method::
+The raster download methods creates a task for the API. Depending on the size
+and resolution it takes some time for the raster to be prepared. These methods
+will keep on checking if the raster is ready to be downloaded.  When a raster
+is ready to be downloaded a message in the Lizard portal is created as
+well. If you want to delete these messages (due to bulk downloading for
+example), use the following method::
 
-  $dl.clear_inbox()
+  >>> dl.clear_inbox()
 
 Installation
 ------------
