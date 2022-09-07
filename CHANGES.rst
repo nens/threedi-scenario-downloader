@@ -5,7 +5,10 @@ Changelog of threedi-scenario-downloader
 0.16 (unreleased)
 -----------------
 
-- Nothing changed yet.
+- Added ``find_scenarios_by_exact_name()`` function that doesn't do a case
+  insensitive search for names *containing* the search term (like
+  ``find_scenarios_by_name()`` does), but only does an exact match. Handy if
+  there are too many similarly-named scenarios.
 
 
 0.15 (2021-08-12)
