@@ -245,7 +245,7 @@ def download_raster(
 ):
     """
     Download raster.
-    To download multiple rasters at the same time, simply pass the required input parameters as list. 
+    To download multiple rasters at the same time, simply pass the required input parameters as list.
     Scenario and pathname should be of same length. Other paramerts can be tuple to apply the same settings to all rasters.
     """
     # If task is called for single raster, prepare list.
