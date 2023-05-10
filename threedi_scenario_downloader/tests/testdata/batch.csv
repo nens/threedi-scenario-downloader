@@ -1,3 +1,3 @@
 uuid,url,pathname
-efa5eeb8-246b-4f9e-9b6e-b975bf96d28c,https://demo.lizard.net/api/v3/tasks/efa5eeb8-246b-4f9e-9b6e-b975bf96d28c/,threedi_scenario_downloader/tests/testdata/max_wd_batch_1.tif
-140f094d-c27c-4c04-8a76-72ab1dac35ee,https://demo.lizard.net/api/v3/tasks/140f094d-c27c-4c04-8a76-72ab1dac35ee/,threedi_scenario_downloader/tests/testdata/max_wd_batch_2.tif
+7e9b1daa-4e80-418f-a0d7-a30eeb38c3ed,https://demo.lizard.net/api/v4/tasks/7e9b1daa-4e80-418f-a0d7-a30eeb38c3ed/,threedi_scenario_downloader/tests/testdata/max_wd_batch_1.tif
+948c78fb-4021-46e5-b2a9-11101c23e021,https://demo.lizard.net/api/v4/tasks/948c78fb-4021-46e5-b2a9-11101c23e021/,threedi_scenario_downloader/tests/testdata/max_wd_batch_2.tif

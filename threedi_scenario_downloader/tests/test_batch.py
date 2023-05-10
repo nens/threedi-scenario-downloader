@@ -13,6 +13,7 @@ DEPTH_UUID = "921540af-57aa-4a74-8788-6d8f1c8b518b"
 def test_api_key():
     config = configparser.ConfigParser()
     config.read("threedi_scenario_downloader/tests/testdata/realconfig.ini")
+    print(config["credentials"]["api_key"])
     downloader.set_api_key(config["credentials"]["api_key"])
 
     assert (downloader.get_api_key() is not None) and (
@@ -35,7 +36,7 @@ def test_download_raster_batch():
         "depth-max-dtri",
         "EPSG:4326",
         10,
-        bounds=None,
+        bbox=None,
         time=None,
         pathname=file_paths,
         export_task_csv=export_task_csv,

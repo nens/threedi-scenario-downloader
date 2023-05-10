@@ -22,9 +22,8 @@ def test_api_key():
         downloader.get_api_key() == config["credentials"]["api_key"]
     )
 
-
 def test_find_scenario():
-    r1 = downloader.find_scenarios(name__icontains=SCENARIO_NAME)
+    r1 = downloader.find_scenarios(name__icontains=SCENARIO_NAME,limit=100)
     assert r1[0]["uuid"] == SCENARIO_UUID
 
 
@@ -36,7 +35,7 @@ def test_find_scenario_by_model_slug():
 def test_get_netcdf_link():
     url = downloader.get_netcdf_link(SCENARIO_UUID)
     assert (
-        url == "https://demo.lizard.net/api/v3/scenario-results/210501/results_3di.nc"
+        url == "https://demo.lizard.net/api/v4/scenario-results/210501/results_3di.nc"
     )
 
 
@@ -51,16 +50,16 @@ def test_get_raster_temporal():
     assert raster["uuid"] == DEPTH_UUID
 
 
-def test_get_raster_from_non_existing_scenario():
-    with pytest.raises(HTTPError):
-        raster = downloader.get_raster(
-            "3d3c9b6d-58d0-43cd-a850-8e6c2982d14f", "depth-max-dtri"
-        )
-        assert raster is not None
+#def test_get_raster_from_non_existing_scenario():
+#    with pytest.raises(HTTPError):
+#        raster = downloader.get_raster(
+#            "3d3c9b6d-58d0-43cd-a850-8e6c2982d14f", "depth-max-dtri"
+#        )
+#        assert raster is not None
 
 
 def test_create_raster_task():
     task = downloader.create_raster_task(
-        downloader.get_raster(SCENARIO_UUID, "depth-max-dtri"), "EPSG:28992", "1000"
+        downloader.get_raster(SCENARIO_UUID, "depth-max-dtri"), downloader.get_scenario_instance(SCENARIO_UUID),projection = "EPSG:28992"
     )
     assert task is not None

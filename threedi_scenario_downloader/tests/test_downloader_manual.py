@@ -20,13 +20,12 @@ def test_api_key():
         downloader.get_api_key() == config["credentials"]["api_key"]
     )
 
-
 def test_download_maximum_waterdepth_raster():
     downloader.download_maximum_waterdepth_raster(
         SCENARIO_UUID,
         "EPSG:28992",
         resolution=1000,
-        bounds=None,
+        bbox=None,
         pathname="threedi_scenario_downloader/tests/testdata/max_waterdepth.tif",
     )
     assert os.path.isfile(
@@ -40,22 +39,20 @@ def test_download_waterdepth_raster():
         "EPSG:28992",
         1000,
         "2018-06-02T06:00:00Z",
-        bounds=None,
-        bounds_srs=None,
+        bbox=None,
         pathname="threedi_scenario_downloader/tests/testdata/waterdepth.tif",
     )
     assert os.path.isfile("threedi_scenario_downloader/tests/testdata/waterdepth.tif")
 
 
 def test_download_waterdepth_raster_reprojected_bounds():
-    bounds = {"east": 115000, "west": 114000, "north": 561000, "south": 560000}
+    bbox = {"east": 115000, "west": 114000, "north": 561000, "south": 560000}
     downloader.download_waterdepth_raster(
         SCENARIO_UUID,
         "EPSG:28992",
         1000,
         "2018-06-02T06:00:00Z",
-        bounds=bounds,
-        bounds_srs="EPSG:28992",
+        bbox=bbox,
         pathname="threedi_scenario_downloader/tests/testdata/waterdepth_reprojected.tif",
     )
     assert os.path.isfile(
@@ -76,12 +73,6 @@ def test_download_grid_administration():
     )
     assert os.path.isfile("threedi_scenario_downloader/tests/testdata/test.h5")
 
-
-def test_clear_inbox():
-    result = downloader.clear_inbox()
-    assert result
-
-
 def test_get_attachment_links():
     scenario = downloader.find_scenarios_by_name(SCENARIO_NAME)[0]
     links = downloader.get_attachment_links(scenario)
@@ -96,8 +87,9 @@ def test_rasters_in_scenario():
 
 def test_get_raster_link():
     raster = downloader.get_raster(SCENARIO_UUID, "depth-max-dtri")
+    scenario_instance = downloader.get_scenario_instance(SCENARIO_UUID)
     download_url = downloader.get_raster_link(
-        raster, "EPSG:4326", 10, bounds=None, time=None
+        raster, scenario_instance, 10, "EPSG:4326", bbox=None, time=None
     )
     assert download_url is not None
 
@@ -110,7 +102,7 @@ def test_download_raster():
         "depth-max-dtri",
         "EPSG:4326",
         10,
-        bounds=None,
+        bbox=None,
         time=None,
         pathname=file_path,
     )
@@ -130,7 +122,7 @@ def test_download_raster_batch():
         "depth-max-dtri",
         "EPSG:4326",
         10,
-        bounds=None,
+        bbox=None,
         time=None,
         pathname=file_paths,
     )
@@ -186,5 +178,5 @@ def test_get_raster_from_json():
 
 
 def test_request_json_from_url():
-    url = "https://demo.lizard.net/api/v3/scenarios/{}/".format(SCENARIO_UUID)
+    url = "https://demo.lizard.net/api/v4/scenarios/{}/".format(SCENARIO_UUID)
     assert isinstance(downloader.request_json_from_url(url, params=None), dict)

@@ -8,8 +8,10 @@ import logging
 import os
 import requests
 import csv
+import math 
+import pyproj
 
-LIZARD_URL = "https://demo.lizard.net/api/v3/"
+LIZARD_URL = "https://demo.lizard.net/api/v4/"
 RESULT_LIMIT = 10
 
 log = logging.getLogger()
@@ -42,6 +44,10 @@ def set_api_key(api_key):
 def get_api_key():
     return AUTH["api_key"]
 
+def print_details(response):
+    if response.status_code != 200:
+        print("Request was unsuccesfull. Status code:", response.status_code)
+        print("Response content:", response.text)
 
 def find_scenarios(limit=RESULT_LIMIT, **kwargs):
     """return json containing scenarios based on supplied filters"""
@@ -84,113 +90,124 @@ def find_scenarios_by_exact_name(name, limit=RESULT_LIMIT):
     r.raise_for_status()
     return r.json()["results"]
 
+def get_scenario_instance(scenario_uuid):
+    """return scenario instance containing all projection and resolution information""" 
+    r = requests.get(
+        url="{}scenarios/{}/".format(LIZARD_URL, scenario_uuid),
+        auth=("__key__", get_api_key()),
+    )
+    r.raise_for_status()
+    scenario_instance = r.json()
+    return scenario_instance
+
+def get_scenario_instance_results(scenario_uuid):
+     """return request response with all raster results"""
+     r = requests.get(
+        url="{}scenarios/{}/results".format(LIZARD_URL, scenario_uuid),
+        auth=("__key__", get_api_key()),
+     )
+     r.raise_for_status()
+     return r.json()["results"]
 
 def get_netcdf_link(scenario_uuid):
     """return url to raw 3Di results"""
-    r = requests.get(
-        url="{}scenarios/{}".format(LIZARD_URL, scenario_uuid),
-        auth=("__key__", get_api_key()),
-    )
-    r.raise_for_status()
-    for result in r.json()["result_set"]:
-        if result["result_type"]["code"] == "results-3di":
+    result_list = get_scenario_instance_results(scenario_uuid)
+    
+    for result in result_list:
+        if result["code"] == "results-3di":
             url = result["attachment_url"]
             return url
 
-
 def get_aggregation_netcdf_link(scenario_uuid):
     """return url to raw 3Di results"""
-    r = requests.get(
-        url="{}scenarios/{}".format(LIZARD_URL, scenario_uuid),
-        auth=("__key__", get_api_key()),
-    )
-    r.raise_for_status()
-    for result in r.json()["result_set"]:
-        if result["result_type"]["code"] == "aggregate-results-3di":
+    result_list = get_scenario_instance_results(scenario_uuid)
+    
+    for result in result_list:
+        if result["code"] == "aggregate-results-3di":
             url = result["attachment_url"]
+            
             return url
 
 
 def get_gridadmin_link(scenario_uuid):
     """return url to gridadministration"""
-    r = requests.get(
-        url="{}scenarios/{}".format(LIZARD_URL, scenario_uuid),
-        auth=("__key__", get_api_key()),
-    )
-    r.raise_for_status()
-    for result in r.json()["result_set"]:
-        if result["result_type"]["code"] == "grid-admin":
+    result_list = get_scenario_instance_results(scenario_uuid)
+    
+    for result in result_list:
+        if result["code"] == "grid-admin":
             url = result["attachment_url"]
             return url
 
 
 def get_logging_link(scenario_uuid):
-    """return url to zipped logging"""
-    r = requests.get(
-        url="{}scenarios/{}".format(LIZARD_URL, scenario_uuid),
-        auth=("__key__", get_api_key()),
-    )
-    r.raise_for_status()
-    for result in r.json()["result_set"]:
-        if result["result_type"]["code"] == "logfiles":
+     result_list = get_scenario_instance_results(scenario_uuid)
+    
+     for result in result_list:
+        if result["code"] == "logfiles":
             url = result["attachment_url"]
             return url
-
 
 def get_raster(scenario_uuid, raster_code):
     """return json of raster based on scenario uuid and raster type"""
 
-    r = requests.get(
-        url="{}scenarios/{}".format(LIZARD_URL, scenario_uuid),
+    result_list = get_scenario_instance_results(scenario_uuid)
+    
+    for result in result_list:
+        if result["code"] == raster_code:
+            result_url = result["raster"]   
+    r= requests.get(
+        url=result_url,
         auth=("__key__", get_api_key()),
     )
+    
     r.raise_for_status()
-    for result in r.json()["result_set"]:
-        if result["result_type"]["code"] == raster_code:
-            return result["raster"]
+
+    raster = r.json()
+    return raster
 
 
 def create_raster_task(
-    raster, target_srs, resolution, bounds=None, bounds_srs=None, time=None
+    raster, scenario_instance, resolution=None, projection=None, bbox=None, time=None
 ):
-    """create Lizard raster task"""
+    """create Lizard raster task"""       
+    x1 = scenario_instance["origin_x"]
+    y1 = scenario_instance["origin_y"]
+    x2 = scenario_instance["upper_bound_x"]
+    y2 = scenario_instance["upper_bound_y"]
 
-    if bounds == None:
-        bounds = raster["spatial_bounds"]
-        bounds_srs = "EPSG:4326"
-
-    e = bounds["east"]
-    w = bounds["west"]
-    n = bounds["north"]
-    s = bounds["south"]
-
-    bbox = "POLYGON(({} {},{} {},{} {},{} {},{} {}))".format(
-        w, n, e, n, e, s, w, s, w, n
-    )
-
-    url = "{}rasters/{}/data/".format(LIZARD_URL, raster["uuid"])
-    if time is None:
-        # non temporal raster
-        payload = {
-            "cellsize": resolution,
-            "geom": bbox,
-            "srs": bounds_srs,
-            "target_srs": target_srs,
-            "format": "geotiff",
-            "async": "true",
-        }
+    bbox = '{},{},{},{}'.format(x1,y1,x2,y2)
+    
+    if projection is None:
+        projection = raster["projection"]
+    
+    if resolution is None:
+        pixelsize_x = abs(scenario_instance["pixelsize_x"])
+        pixelsize_y = abs(scenario_instance["pixelsize_y"])
     else:
+        pixelsize_x = resolution
+        pixelsize_y = resolution
+    
+    height = math.ceil((x2-x1)/pixelsize_x)
+    width = math.ceil((y2-y1)/pixelsize_y)
+    
+    url = "{}rasters/{}/data/".format(LIZARD_URL, raster["uuid"])
+
+        # non temporal raster
+    payload = {
+        "width": width,
+        "height":height,
+        "bbox": bbox,
+        "projection": projection,
+        "format": "geotiff",
+        "async": "true",
+    }
+    if time is not None:
         # temporal rasters
-        payload = {
-            "cellsize": resolution,
-            "geom": bbox,
-            "srs": bounds_srs,
-            "target_srs": target_srs,
-            "time": time,
-            "format": "geotiff",
-            "async": "true",
-        }
+        payload["start"]  = time
+        
     r = requests.get(url=url, auth=("__key__", get_api_key()), params=payload)
+    print_details(r)
+    
     r.raise_for_status()
     return r.json()
 
@@ -202,7 +219,7 @@ def get_task_status(task_uuid):
     try:
         r = requests.get(url=url, auth=("__key__", get_api_key()))
         r.raise_for_status()
-        return r.json()["task_status"]
+        return r.json()["status"]
     except:
         return "UNKNOWN"
 
@@ -213,7 +230,7 @@ def get_task_download_url(task_uuid):
         url = "{}tasks/{}/".format(LIZARD_URL, task_uuid)
         r = requests.get(url=url, auth=("__key__", get_api_key()))
         r.raise_for_status()
-        return r.json()["result_url"]
+        return r.json()["result"]
     # What to do if task is not a success?
 
 
@@ -243,10 +260,9 @@ def download_task(task_uuid, pathname=None):
 def download_raster(
     scenario,
     raster_code=None,
-    target_srs=None,
+    projection=None,
     resolution=None,
-    bounds=None,
-    bounds_srs=None,
+    bbox=None,
     time=None,
     pathname=None,
     is_threedi_scenario=True,  # For lizard rasters that are not a Threedi result.
@@ -271,11 +287,9 @@ def download_raster(
     # Transform input parameters to list
     scenario_list = transform_to_list(var=scenario)
     raster_code_list = transform_to_list(var=raster_code, length=len(scenario_list))
-    target_srs_list = transform_to_list(var=target_srs, length=len(scenario_list))
-
-    bounds_list = transform_to_list(var=bounds, length=len(scenario_list))
-    bounds_srs_list = transform_to_list(var=bounds_srs, length=len(scenario_list))
+    projection_list = transform_to_list(var=projection, length=len(scenario_list))
     resolution_list = transform_to_list(var=resolution, length=len(scenario_list))
+    bbox_list = transform_to_list(var=bbox, length=len(scenario_list))
     time_list = transform_to_list(var=time, length=len(scenario_list))
     pathname_list = transform_to_list(var=pathname)
     is_threedi_scenario_list = transform_to_list(
@@ -297,18 +311,16 @@ def download_raster(
     for (
         (index, scenario),
         raster_code,
-        target_srs,
-        bounds,
-        bounds_srs,
+        projection,
+        bbox,
         resolution,
         time,
         is_threedi_scenario,
     ) in zip(
         enumerate(scenario_list),
         raster_code_list,
-        target_srs_list,
-        bounds_list,
-        bounds_srs_list,
+        projection_list,
+        bbox_list,
         resolution_list,
         time_list,
         is_threedi_scenario_list,
@@ -316,9 +328,11 @@ def download_raster(
         if is_threedi_scenario:
             if type(scenario) is str:
                 # assume uuid
+                scenario_instance = get_scenario_instance(scenario)
                 raster = get_raster(scenario, raster_code)
             elif type(scenario) is dict:
                 # assume json object
+                scenario_instance = scenario
                 raster = get_raster_from_json(scenario, raster_code)
             else:
                 logging.debug("Invalid scenario: supply a json object or uuid string")
@@ -326,29 +340,30 @@ def download_raster(
                     "Invalid scenario: supply a json object or uuid string"
                 )
         else:
-            # If no bounds are passed the function will probably crash.
-            if (type(scenario) is str) and (bounds is not None):
+            # If no bbox are passed the function will probably crash.
+            if (type(scenario) is str) and (bbox is not None):
                 raster = {}
+                scenario_instance = {}
                 raster["uuid"] = scenario
             else:
-                # print("Invalid scenario: supply a uuid string and spatial bounds. Scenario: {}".format(scenario))
+                # print("Invalid scenario: supply a uuid string and bounding box. Scenario: {}".format(scenario))
                 logging.debug(
-                    "Invalid scenario: supply a uuid string and spatial bounds"
+                    "Invalid scenario: supply a uuid string and bounding box"
                 )
         # Send task to lizard
         logging.debug("Creating task with the following parameters:")
         logging.debug("raster: {}".format(raster))
-        logging.debug("target_srs: {}".format(target_srs))
+        logging.debug("projection: {}".format(projection))
         logging.debug("resolution: {}".format(resolution))
-        logging.debug("bounds: {}".format(bounds))
-        logging.debug("bounds_srs: {}".format(bounds_srs))
+        logging.debug("scenario_instance: {}".format(scenario_instance))
+        logging.debug("bbox: {}".format(bbox))
         logging.debug("time: {}".format(time))
         task = create_raster_task(
             raster,
-            target_srs,
+            scenario_instance,
+            projection=projection,
             resolution=resolution,
-            bounds=bounds,
-            bounds_srs=bounds_srs,
+            bbox = bbox,
             time=time,
         )
         task_id_list[index] = task["task_id"]
@@ -422,67 +437,62 @@ def download_raster(
 
 
 def download_maximum_waterdepth_raster(
-    scenario_uuid, target_srs, resolution, bounds=None, bounds_srs=None, pathname=None
+    scenario_uuid, projection, resolution, bbox=None, pathname=None
 ):
     """download Maximum waterdepth raster"""
     download_raster(
         scenario_uuid,
         "depth-max-dtri",
-        target_srs,
+        projection,
         resolution,
-        bounds=bounds,
-        bounds_srs=bounds_srs,
+        bbox=bbox,
         pathname=pathname,
     )
 
 
 def download_maximum_waterlevel_raster(
-    scenario_uuid, target_srs, resolution, bounds=None, bounds_srs=None, pathname=None
+    scenario_uuid, projection, resolution, bbox=None, pathname=None
 ):
     """download Maximum waterdepth raster"""
     download_raster(
         scenario_uuid,
         "s1-max-dtri",
-        target_srs,
+        projection,
         resolution,
-        bounds=bounds,
-        bounds_srs=bounds_srs,
+        bbox=bbox,
         pathname=pathname,
     )
 
 
 def download_total_damage_raster(
-    scenario_uuid, target_srs, resolution, bounds=None, bounds_srs=None, pathname=None
+    scenario_uuid, projection, resolution, bbox=None, pathname=None
 ):
     """download Total Damage raster"""
     download_raster(
         scenario_uuid,
         "total-damage",
-        target_srs,
+        projection,
         resolution,
-        bounds=bounds,
-        bounds_srs=bounds_srs,
+        bbox=bbox,
         pathname=pathname,
     )
 
 
 def download_waterdepth_raster(
     scenario_uuid,
-    target_srs,
+    projection,
     resolution,
     time,
-    bounds=None,
-    bounds_srs=None,
+    bbox=None,
     pathname=None,
 ):
     """download snapshot of Waterdepth raster"""
     download_raster(
         scenario_uuid,
         "depth-dtri",
-        target_srs,
+        projection,
         resolution,
-        bounds=bounds,
-        bounds_srs=bounds_srs,
+        bbox=bbox,
         time=time,
         pathname=pathname,
     )
@@ -490,21 +500,19 @@ def download_waterdepth_raster(
 
 def download_waterlevel_raster(
     scenario_uuid,
-    target_srs,
+    projection,
     resolution,
     time,
-    bounds=None,
-    bounds_srs=None,
+    bbox=None,
     pathname=None,
 ):
     """download snapshot of Waterdepth raster"""
     download_raster(
         scenario_uuid,
         "s1-dtri",
-        target_srs,
+        projection,
         resolution,
-        bounds=bounds,
-        bounds_srs=bounds_srs,
+        bbox=bbox,
         time=time,
         pathname=pathname,
     )
@@ -512,21 +520,19 @@ def download_waterlevel_raster(
 
 def download_precipitation_raster(
     scenario_uuid,
-    target_srs,
+    projection,
     resolution,
     time,
-    bounds=None,
-    bounds_srs=None,
+    bbox=None,
     pathname=None,
 ):
     """download snapshot of Waterdepth raster"""
     download_raster(
         scenario_uuid,
         "rain-quad",
-        target_srs,
+        projection,
         resolution,
-        bounds=bounds,
-        bounds_srs=bounds_srs,
+        bbox=bbox,
         time=time,
         pathname=pathname,
     )
@@ -559,82 +565,70 @@ def download_grid_administration(scenario_uuid, pathname=None):
     logging.debug("Start downloading grid administration: {}".format(url))
     download_file(url, pathname)
 
-
-def clear_inbox():
-    """delete all messages from Lizard inbox"""
-    url = "{}inbox/".format(LIZARD_URL)
-    r = requests.get(
-        url=url,
-        auth=("__key__", get_api_key()),
-        params={"limit": RESULT_LIMIT},
-        timeout=10,
-    )
-    r.raise_for_status()
-    messages = r.json()["results"]
-    for msg in messages:
-        msg_id = msg["id"]
-        read_url = "{}inbox/{}/read/".format(LIZARD_URL, msg_id)
-        r = requests.post(url=read_url, auth=("__key__", get_api_key()), timeout=10)
-    return True
-
-
 def get_attachment_links(scenario_json):
     """get links to static scenario results"""
     attachment_links = {}
-    for result in scenario_json["result_set"]:
+    scenario_uuid = scenario_json['uuid']
+    result_list = get_scenario_instance_results(scenario_uuid)
+    for result in result_list:
         if result["attachment_url"]:
-            result_name = result["result_type"]["name"]
+            result_name = result["name"]
             attachment_links[result_name] = result["attachment_url"]
     if attachment_links:
         return attachment_links
     else:
         return None
 
-
 def rasters_in_scenario(scenario_json):
     """return two lists of static and temporal rasters including 3di result name and code"""
+    scenario_uuid = scenario_json['uuid']
+    result_list = get_scenario_instance_results(scenario_uuid)
+    
     temporal_rasters = []
     static_rasters = []
-    for result in scenario_json["result_set"]:
-        result_type = result["result_type"]
-        if result_type["has_raster"]:
-            raster = result["raster"]
-            name_3di = result_type["name"]
-            code_3di = result_type["code"]
-            raster["name_3di"] = name_3di
-            raster["code_3di"] = code_3di
-            if raster["temporal"]:
-                temporal_rasters.append(raster)
+    for result in result_list:
+
+        if result["raster"]:
+           
+            raster_url = result["raster"] 
+            raster_instance = get_raster(scenario_uuid, result["code"])
+            name_3di = result["name"]
+            code_3di = result["code"]
+            raster_instance["name_3di"] = name_3di
+            raster_instance["code_3di"] = code_3di
+            if raster_instance["temporal"]:
+                temporal_rasters.append(raster_url)
             else:
-                static_rasters.append(raster)
+                static_rasters.append(raster_url)
     return static_rasters, temporal_rasters
 
 
 def get_raster_link(
-    raster, target_srs, resolution, bounds=None, bounds_srs=None, time=None
+    raster, scenario_instance, resolution, projection, bbox=None, time=None
 ):
     """get url to download raster"""
-    task = create_raster_task(raster, target_srs, resolution, bounds, bounds_srs, time)
+    task = create_raster_task(raster, scenario_instance,resolution, projection, bbox,time)
     task_uuid = task["task_id"]
 
     logging.debug("Start waiting for task {} to finish".format(task_uuid))
     task_status = get_task_status(task_uuid)
-    while task_status == "PENDING":
-        logging.debug("Still waiting for task {}".format(task_uuid))
-        sleep(5)
+    processing = True
+    while processing:
         task_status = get_task_status(task_uuid)
-
-    if get_task_status(task_uuid) == "SUCCESS":
-        # task is a succes, return download url
-        download_url = get_task_download_url(task_uuid)
-        return download_url
-    else:
-        logging.debug("Task failed")
-        return None
-
+        if task_status in ("PENDING", "UNKNOWN", "STARTED", "RETRY"):
+                logging.debug("Still waiting for task {}".format(task_uuid))
+                sleep(5)
+        elif task_status == "SUCCESS":
+            logging.debug("Task completed")
+            sleep(5)
+            download_url = get_task_download_url(task_uuid)
+            return download_url
+        else:
+            logging.debug("Task failed")
+            return None
 
 def get_static_rasters_links(
-    static_rasters, target_srs, resolution, bounds=None, bounds_srs=None, time=None
+    static_rasters, projection, resolution, bbox=None, time=None
 ):
     """return a dict of urls to geotiff files of static rasters in scenario
     the dict items are formatted as result_name: link.tif"""
@@ -642,7 +636,7 @@ def get_static_rasters_links(
     for static_raster in static_rasters:
         name = static_raster["name_3di"]
         static_raster_url = get_raster_link(
-            static_raster, target_srs, resolution, bounds, bounds_srs, time
+            static_raster,projection, resolution, bbox, time
         )
         static_raster_urls[name] = static_raster_url
     return static_raster_urls
@@ -650,10 +644,9 @@ def get_static_rasters_links(
 
 def get_temporal_raster_links(
     temporal_raster,
-    target_srs,
+    projection,
     resolution,
-    bounds=None,
-    bounds_srs=None,
+    bbox=None,
     interval_hours=None,
 ):
     """return a dict of urls to geotiff files of a temporal raster
@@ -663,7 +656,7 @@ def get_temporal_raster_links(
     timesteps = get_raster_timesteps(temporal_raster, interval_hours)
     for timestep in timesteps:
         download_url = get_raster_link(
-            temporal_raster, target_srs, resolution, bounds, timestep
+            temporal_raster, projection, resolution, bbox, timestep
         )
         url_timestep = os.path.splitext(download_url)[0].split("_")[-1]
         # Lizard returns the nearest timestep based on the time=timestep request
@@ -682,17 +675,16 @@ def get_temporal_raster_links(
 
 def get_temporal_rasters_links(
     temporal_rasters,
-    target_srs,
+    projection,
     resolution,
-    bounds=None,
-    bounds_srs=None,
+    bbox=None,
     interval_hours=None,
 ):
     """get links to all temporal rasters"""
     temporal_rasters_urls = {}
     for temporal_raster in temporal_rasters:
         temporal_raster_urls = get_temporal_raster_links(
-            temporal_raster, target_srs, resolution, bounds, bounds_srs, interval_hours
+            temporal_raster, projection, resolution, bbox, interval_hours
         )
         for name_timestep, download_url in temporal_raster_urls.items():
             temporal_rasters_urls.setdefault(name_timestep, download_url)
@@ -730,16 +722,28 @@ def get_raster_timesteps(raster, interval_hours=None):
             first_timestamp += interval_ms
         if not last_timestamp in timesteps_ms:
             timesteps_ms.append(last_timestamp)
-    timesteps = [datetime.fromtimestamp(i / 1000.0).isoformat() for i in timesteps_ms]
+        timesteps_ms = [datetime.fromtimestamp(i / 1000.0).isoformat() for i in timesteps_ms]
+    timesteps =  timesteps_ms
     return timesteps
 
 
-def get_raster_from_json(scenario, raster_code):
+def get_raster_from_json(scenario_json, raster_code):
     """return raster json object from scenario"""
-    for result in scenario["result_set"]:
-        if result["result_type"]["code"] == raster_code:
-            return result["raster"]
+    scenario_uuid = scenario_json['uuid']
+    result_list = get_scenario_instance_results(scenario_uuid)
+    
+    for result in result_list:
+        if result["code"] == raster_code:
+            result_url = result["raster"]   
+            r= requests.get(
+                url=result_url,
+                auth=("__key__", get_api_key()),
+                )
+    
+            r.raise_for_status()
 
+            raster = r.json()
+    return raster
 
 def request_json_from_url(url, params=None):
     """retrieve json object from url"""
