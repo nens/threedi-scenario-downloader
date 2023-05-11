@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """The downloader part of the threedi_scenario_downloader supplies the user with often used functionality to look up and export 3Di results using the Lizard API"""
-from datetime import datetime
+from datetime import datetime, timedelta
 from urllib.parse import urlparse
 from urllib.error import HTTPError
 from time import sleep
@@ -8,8 +8,7 @@ import logging
 import os
 import requests
 import csv
-import math 
-import pyproj
+import math
 
 LIZARD_URL = "https://demo.lizard.net/api/v4/"
 RESULT_LIMIT = 10
@@ -44,10 +43,11 @@ def set_api_key(api_key):
 def get_api_key():
     return AUTH["api_key"]
 
-def print_details(response):
-    if response.status_code != 200:
-        print("Request was unsuccesfull. Status code:", response.status_code)
+
+def print_negative_response(response):
+    if response.status_code > 299:
         print("Response content:", response.text)
+
 
 def find_scenarios(limit=RESULT_LIMIT, **kwargs):
     """return json containing scenarios based on supplied filters"""
@@ -90,8 +90,9 @@ def find_scenarios_by_exact_name(name, limit=RESULT_LIMIT):
     r.raise_for_status()
     return r.json()["results"]
 
+
 def get_scenario_instance(scenario_uuid):
-    """return scenario instance containing all projection and resolution information""" 
+    """return scenario instance containing all projection and resolution information"""
     r = requests.get(
         url="{}scenarios/{}/".format(LIZARD_URL, scenario_uuid),
         auth=("__key__", get_api_key()),
@@ -100,39 +101,45 @@ def get_scenario_instance(scenario_uuid):
     scenario_instance = r.json()
     return scenario_instance
 
+
 def get_scenario_instance_results(scenario_uuid):
-     """return request response with all raster results"""
-     r = requests.get(
+    """check if scenario exist"""
+    get_scenario_instance(scenario_uuid)
+
+    """return request response with all raster results"""
+    r = requests.get(
         url="{}scenarios/{}/results".format(LIZARD_URL, scenario_uuid),
         auth=("__key__", get_api_key()),
-     )
-     r.raise_for_status()
-     return r.json()["results"]
+    )
+    r.raise_for_status()
+    return r.json()["results"]
+
 
 def get_netcdf_link(scenario_uuid):
     """return url to raw 3Di results"""
     result_list = get_scenario_instance_results(scenario_uuid)
-    
+
     for result in result_list:
         if result["code"] == "results-3di":
             url = result["attachment_url"]
             return url
 
+
 def get_aggregation_netcdf_link(scenario_uuid):
     """return url to raw 3Di results"""
     result_list = get_scenario_instance_results(scenario_uuid)
-    
+
     for result in result_list:
         if result["code"] == "aggregate-results-3di":
             url = result["attachment_url"]
-            
+
             return url
 
 
 def get_gridadmin_link(scenario_uuid):
     """return url to gridadministration"""
     result_list = get_scenario_instance_results(scenario_uuid)
-    
+
     for result in result_list:
         if result["code"] == "grid-admin":
             url = result["attachment_url"]
@@ -140,26 +147,29 @@ def get_gridadmin_link(scenario_uuid):
 
 
 def get_logging_link(scenario_uuid):
-     result_list = get_scenario_instance_results(scenario_uuid)
-    
-     for result in result_list:
+    result_list = get_scenario_instance_results(scenario_uuid)
+
+    for result in result_list:
         if result["code"] == "logfiles":
             url = result["attachment_url"]
             return url
 
+
+def get_raster_url(scenario_uuid, raster_code):
+    result_list = get_scenario_instance_results(scenario_uuid)
+
+    for result in result_list:
+        if result["code"] == raster_code:
+            raster_url = result["raster"]
+            return raster_url
+
+
 def get_raster(scenario_uuid, raster_code):
     """return json of raster based on scenario uuid and raster type"""
 
-    result_list = get_scenario_instance_results(scenario_uuid)
-    
-    for result in result_list:
-        if result["code"] == raster_code:
-            result_url = result["raster"]   
-    r= requests.get(
-        url=result_url,
-        auth=("__key__", get_api_key()),
-    )
-    
+    raster_url = get_raster_url(scenario_uuid, raster_code)
+
+    r = requests.get(url=raster_url, auth=("__key__", get_api_key()),)
     r.raise_for_status()
 
     raster = r.json()
@@ -169,33 +179,33 @@ def get_raster(scenario_uuid, raster_code):
 def create_raster_task(
     raster, scenario_instance, resolution=None, projection=None, bbox=None, time=None
 ):
-    """create Lizard raster task"""       
+    """create Lizard raster task"""
     x1 = scenario_instance["origin_x"]
     y1 = scenario_instance["origin_y"]
     x2 = scenario_instance["upper_bound_x"]
     y2 = scenario_instance["upper_bound_y"]
 
-    bbox = '{},{},{},{}'.format(x1,y1,x2,y2)
-    
+    bbox = "{},{},{},{}".format(x1, y1, x2, y2)
+
     if projection is None:
         projection = raster["projection"]
-    
+
     if resolution is None:
         pixelsize_x = abs(scenario_instance["pixelsize_x"])
         pixelsize_y = abs(scenario_instance["pixelsize_y"])
     else:
         pixelsize_x = resolution
         pixelsize_y = resolution
-    
-    height = math.ceil((x2-x1)/pixelsize_x)
-    width = math.ceil((y2-y1)/pixelsize_y)
-    
+
+    height = math.ceil((x2 - x1) / pixelsize_x)
+    width = math.ceil((y2 - y1) / pixelsize_y)
+
     url = "{}rasters/{}/data/".format(LIZARD_URL, raster["uuid"])
 
-        # non temporal raster
+    # non temporal raster
     payload = {
         "width": width,
-        "height":height,
+        "height": height,
         "bbox": bbox,
         "projection": projection,
         "format": "geotiff",
@@ -203,11 +213,11 @@ def create_raster_task(
     }
     if time is not None:
         # temporal rasters
-        payload["start"]  = time
-        
+        payload["start"] = time
+
     r = requests.get(url=url, auth=("__key__", get_api_key()), params=payload)
-    print_details(r)
-    
+    print_negative_response(r)
+
     r.raise_for_status()
     return r.json()
 
@@ -347,9 +357,7 @@ def download_raster(
                 raster["uuid"] = scenario
             else:
                 # print("Invalid scenario: supply a uuid string and bounding box. Scenario: {}".format(scenario))
-                logging.debug(
-                    "Invalid scenario: supply a uuid string and bounding box"
-                )
+                logging.debug("Invalid scenario: supply a uuid string and bounding box")
         # Send task to lizard
         logging.debug("Creating task with the following parameters:")
         logging.debug("raster: {}".format(raster))
@@ -363,7 +371,7 @@ def download_raster(
             scenario_instance,
             projection=projection,
             resolution=resolution,
-            bbox = bbox,
+            bbox=bbox,
             time=time,
         )
         task_id_list[index] = task["task_id"]
@@ -479,12 +487,7 @@ def download_total_damage_raster(
 
 
 def download_waterdepth_raster(
-    scenario_uuid,
-    projection,
-    resolution,
-    time,
-    bbox=None,
-    pathname=None,
+    scenario_uuid, projection, resolution, time, bbox=None, pathname=None,
 ):
     """download snapshot of Waterdepth raster"""
     download_raster(
@@ -499,12 +502,7 @@ def download_waterdepth_raster(
 
 
 def download_waterlevel_raster(
-    scenario_uuid,
-    projection,
-    resolution,
-    time,
-    bbox=None,
-    pathname=None,
+    scenario_uuid, projection, resolution, time, bbox=None, pathname=None,
 ):
     """download snapshot of Waterdepth raster"""
     download_raster(
@@ -519,12 +517,7 @@ def download_waterlevel_raster(
 
 
 def download_precipitation_raster(
-    scenario_uuid,
-    projection,
-    resolution,
-    time,
-    bbox=None,
-    pathname=None,
+    scenario_uuid, projection, resolution, time, bbox=None, pathname=None,
 ):
     """download snapshot of Waterdepth raster"""
     download_raster(
@@ -565,10 +558,11 @@ def download_grid_administration(scenario_uuid, pathname=None):
     logging.debug("Start downloading grid administration: {}".format(url))
     download_file(url, pathname)
 
+
 def get_attachment_links(scenario_json):
     """get links to static scenario results"""
     attachment_links = {}
-    scenario_uuid = scenario_json['uuid']
+    scenario_uuid = scenario_json["uuid"]
     result_list = get_scenario_instance_results(scenario_uuid)
     for result in result_list:
         if result["attachment_url"]:
@@ -579,18 +573,19 @@ def get_attachment_links(scenario_json):
     else:
         return None
 
+
 def rasters_in_scenario(scenario_json):
     """return two lists of static and temporal rasters including 3di result name and code"""
-    scenario_uuid = scenario_json['uuid']
+    scenario_uuid = scenario_json["uuid"]
     result_list = get_scenario_instance_results(scenario_uuid)
-    
+
     temporal_rasters = []
     static_rasters = []
     for result in result_list:
 
         if result["raster"]:
-           
-            raster_url = result["raster"] 
+
+            raster_url = result["raster"]
             raster_instance = get_raster(scenario_uuid, result["code"])
             name_3di = result["name"]
             code_3di = result["code"]
@@ -603,11 +598,13 @@ def rasters_in_scenario(scenario_json):
     return static_rasters, temporal_rasters
 
 
-def get_raster_link(
+def get_raster_download_link(
     raster, scenario_instance, resolution, projection, bbox=None, time=None
 ):
     """get url to download raster"""
-    task = create_raster_task(raster, scenario_instance,resolution, projection, bbox,time)
+    task = create_raster_task(
+        raster, scenario_instance, resolution, projection, bbox, time
+    )
     task_uuid = task["task_id"]
 
     logging.debug("Start waiting for task {} to finish".format(task_uuid))
@@ -616,8 +613,8 @@ def get_raster_link(
     while processing:
         task_status = get_task_status(task_uuid)
         if task_status in ("PENDING", "UNKNOWN", "STARTED", "RETRY"):
-                logging.debug("Still waiting for task {}".format(task_uuid))
-                sleep(5)
+            logging.debug("Still waiting for task {}".format(task_uuid))
+            sleep(5)
         elif task_status == "SUCCESS":
             logging.debug("Task completed")
             sleep(5)
@@ -627,6 +624,7 @@ def get_raster_link(
             logging.debug("Task failed")
             return None
 
+
 def get_static_rasters_links(
     static_rasters, projection, resolution, bbox=None, time=None
 ):
@@ -635,19 +633,15 @@ def get_static_rasters_links(
     static_raster_urls = {}
     for static_raster in static_rasters:
         name = static_raster["name_3di"]
-        static_raster_url = get_raster_link(
-            static_raster,projection, resolution, bbox, time
+        static_raster_url = get_raster_download_link(
+            static_raster, projection, resolution, bbox, time
         )
         static_raster_urls[name] = static_raster_url
     return static_raster_urls
 
 
 def get_temporal_raster_links(
-    temporal_raster,
-    projection,
-    resolution,
-    bbox=None,
-    interval_hours=None,
+    temporal_raster, projection, resolution, bbox=None, interval_hours=None,
 ):
     """return a dict of urls to geotiff files of a temporal raster
     the dict items are formatted as name_3di_datetime: link.tif"""
@@ -655,7 +649,7 @@ def get_temporal_raster_links(
     name = temporal_raster["name_3di"]
     timesteps = get_raster_timesteps(temporal_raster, interval_hours)
     for timestep in timesteps:
-        download_url = get_raster_link(
+        download_url = get_raster_download_link(
             temporal_raster, projection, resolution, bbox, timestep
         )
         url_timestep = os.path.splitext(download_url)[0].split("_")[-1]
@@ -674,11 +668,7 @@ def get_temporal_raster_links(
 
 
 def get_temporal_rasters_links(
-    temporal_rasters,
-    projection,
-    resolution,
-    bbox=None,
-    interval_hours=None,
+    temporal_rasters, projection, resolution, bbox=None, interval_hours=None,
 ):
     """get links to all temporal rasters"""
     temporal_rasters_urls = {}
@@ -689,6 +679,18 @@ def get_temporal_rasters_links(
         for name_timestep, download_url in temporal_raster_urls.items():
             temporal_rasters_urls.setdefault(name_timestep, download_url)
     return temporal_rasters_urls
+
+
+def to_datetime_obj(time_string):
+    """returns a list of 'YYYY-MM-DDTHH:MM:SS' formatted timesteps in temporal range of raster object"""
+    if "." in time_string:
+        # If the timestamp contains milliseconds
+        datetime_obj = datetime.strptime(time_string, "%Y-%m-%dT%H:%M:%S.%fZ")
+    else:
+        # If the timestamp does not contain milliseconds
+        datetime_obj = datetime.strptime(time_string, "%Y-%m-%dT%H:%M:%SZ")
+
+    return datetime_obj
 
 
 def get_raster_timesteps(raster, interval_hours=None):
@@ -711,39 +713,54 @@ def get_raster_timesteps(raster, interval_hours=None):
             timesteps_ms[round(len(timesteps_ms) / 2)],
             timesteps_ms[-1],
         ]
+        timestep_obj_list = [
+            to_datetime_obj(time_string) for time_string in timesteps_ms
+        ]
+
+        # Format the datetime object
+        timesteps = [
+            timestep_obj.strftime("%Y-%m-%dT%H:%M:%S")
+            for timestep_obj in timestep_obj_list
+        ]
+
     else:
         # use interval from argument
-        first_timestamp = int(raster["first_value_timestamp"])
-        timesteps_ms = []
-        last_timestamp = int(raster["last_value_timestamp"])
-        interval_ms = interval_hours * 3600000
+        first_timestamp = raster["first_value_timestamp"]
+        first_timestamp = to_datetime_obj(first_timestamp)
+
+        last_timestamp = raster["last_value_timestamp"]
+        last_timestamp = to_datetime_obj(last_timestamp)
+
+        interval = timedelta(hours=interval_hours)
+
+        timestep_obj_list = []
+
         while last_timestamp > first_timestamp:
-            timesteps_ms.append(first_timestamp)
-            first_timestamp += interval_ms
-        if not last_timestamp in timesteps_ms:
-            timesteps_ms.append(last_timestamp)
-        timesteps_ms = [datetime.fromtimestamp(i / 1000.0).isoformat() for i in timesteps_ms]
-    timesteps =  timesteps_ms
+            timestep_obj_list.append(first_timestamp)
+            first_timestamp += interval
+
+        if not last_timestamp in timestep_obj_list:
+            timestep_obj_list.append(last_timestamp)
+
+        timesteps = [
+            timestep_obj.strftime("%Y-%m-%dT%H:%M:%S")
+            for timestep_obj in timestep_obj_list
+        ]
     return timesteps
 
 
 def get_raster_from_json(scenario_json, raster_code):
     """return raster json object from scenario"""
-    scenario_uuid = scenario_json['uuid']
-    result_list = get_scenario_instance_results(scenario_uuid)
-    
-    for result in result_list:
-        if result["code"] == raster_code:
-            result_url = result["raster"]   
-            r= requests.get(
-                url=result_url,
-                auth=("__key__", get_api_key()),
-                )
-    
-            r.raise_for_status()
+    scenario_uuid = scenario_json["uuid"]
+    raster_url = get_raster_url(scenario_uuid, raster_code)
 
-            raster = r.json()
+    r = requests.get(url=raster_url, auth=("__key__", get_api_key()),)
+
+    r.raise_for_status()
+
+    raster = r.json()
     return raster
+
 
 def request_json_from_url(url, params=None):
     """retrieve json object from url"""

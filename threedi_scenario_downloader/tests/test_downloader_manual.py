@@ -20,6 +20,7 @@ def test_api_key():
         downloader.get_api_key() == config["credentials"]["api_key"]
     )
 
+
 def test_download_maximum_waterdepth_raster():
     downloader.download_maximum_waterdepth_raster(
         SCENARIO_UUID,
@@ -73,6 +74,7 @@ def test_download_grid_administration():
     )
     assert os.path.isfile("threedi_scenario_downloader/tests/testdata/test.h5")
 
+
 def test_get_attachment_links():
     scenario = downloader.find_scenarios_by_name(SCENARIO_NAME)[0]
     links = downloader.get_attachment_links(scenario)
@@ -85,10 +87,10 @@ def test_rasters_in_scenario():
     assert static_rasters is not None and temporal_rasters is not None
 
 
-def test_get_raster_link():
+def test_get_raster_download_link():
     raster = downloader.get_raster(SCENARIO_UUID, "depth-max-dtri")
     scenario_instance = downloader.get_scenario_instance(SCENARIO_UUID)
-    download_url = downloader.get_raster_link(
+    download_url = downloader.get_raster_download_link(
         raster, scenario_instance, 10, "EPSG:4326", bbox=None, time=None
     )
     assert download_url is not None
@@ -131,38 +133,6 @@ def test_download_raster_batch():
         assert os.path.isfile(file_path)
 
 
-# def test_get_static_rasters_links():
-#    scenario = downloader.find_scenarios_by_name("lizardapitest")[0]
-#    static_rasters, _ = downloader.rasters_in_scenario(scenario)
-#    static_rasters = [x for x in static_rasters if x["spatial_bounds"]]
-#    static_rasters_urls = downloader.get_static_rasters_links(
-#        static_rasters, "EPSG:4326", 1000, bounds=None, time=None
-#    )
-#    assert isinstance(static_rasters_urls, dict)
-
-
-# def test_get_temporal_raster_links():
-#    scenario = downloader.find_scenarios_by_name("lizardapitest")[0]
-#    _, temporal_rasters = downloader.rasters_in_scenario(scenario)
-#    temporal_rasters = [x for x in temporal_rasters if x["spatial_bounds"]]
-#    temporal_raster = temporal_rasters[0]
-#
-#    temporal_raster_urls = downloader.get_temporal_raster_links(
-#        temporal_raster, "EPSG:4326", 1000, bounds=None, interval_hours=None
-#    )
-#    assert isinstance(temporal_raster_urls, dict) and len(temporal_raster_urls) > 1
-
-
-# def test_get_temporal_rasters_links():
-#    scenario = downloader.find_scenarios_by_name("lizardapitest")[0]
-#    _, temporal_rasters = downloader.rasters_in_scenario(scenario)
-#    temporal_rasters = [x for x in temporal_rasters if x["spatial_bounds"]]
-#    temporal_rasters_urls = downloader.get_temporal_rasters_links(
-#        temporal_rasters, "EPSG:4326", 1000, bounds=None, interval_hours=None
-#    )
-#    assert isinstance(temporal_rasters_urls, dict)
-
-
 def test_get_raster_timesteps():
     raster = downloader.get_raster(SCENARIO_UUID, "s1-dtri")
     timesteps = downloader.get_raster_timesteps(raster, interval_hours=None)
@@ -172,8 +142,8 @@ def test_get_raster_timesteps():
 
 
 def test_get_raster_from_json():
-    scenario = downloader.find_scenarios_by_model_slug(MODEL_UUID)[0]
-    raster = downloader.get_raster_from_json(scenario, "depth-max-dtri")
+    scenario_json = downloader.find_scenarios_by_model_slug(MODEL_UUID)[0]
+    raster = downloader.get_raster_from_json(scenario_json, "depth-max-dtri")
     assert raster["uuid"] == DEPTH_MAX_UUID
 
 
