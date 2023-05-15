@@ -1,8 +1,8 @@
 Changelog of threedi-scenario-downloader
 ===================================================
 
-0.17 (unreleased)
------------------
+1.0 (2023-05-15)
+----------------
 
 - Changed functions to support the Lizard API v4 (v3 is not supported with this release)
 - Added error statements for faulty API requests
