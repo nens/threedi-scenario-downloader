@@ -91,7 +91,7 @@ def test_get_raster_download_link():
     raster = downloader.get_raster(SCENARIO_UUID, "depth-max-dtri")
     scenario_instance = downloader.get_scenario_instance(SCENARIO_UUID)
     download_url = downloader.get_raster_download_link(
-        raster, scenario_instance, 10, "EPSG:4326", bbox=None, time=None
+        raster, scenario_instance, "EPSG:4326", 10, bbox=None, time=None
     )
     assert download_url is not None
 

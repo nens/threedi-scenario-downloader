@@ -102,15 +102,21 @@ def get_scenario_instance(scenario_uuid):
     return scenario_instance
 
 
-def get_scenario_instance_results(scenario_uuid):
+def get_scenario_instance_results(scenario_uuid, subendpoint=None):
     """check if scenario exist"""
     get_scenario_instance(scenario_uuid)
 
+    if subendpoint:
+        url = "{}scenarios/{}/results/{}".format(LIZARD_URL, scenario_uuid, subendpoint)
+    else:
+        url = "{}scenarios/{}/results".format(LIZARD_URL, scenario_uuid)
+
     """return request response with all raster results"""
-    r = requests.get(
-        url="{}scenarios/{}/results".format(LIZARD_URL, scenario_uuid),
-        auth=("__key__", get_api_key()),
-    )
+    r = requests.get(url=url, auth=("__key__", get_api_key()))
+    if not r.json()["results"]:
+        logging.debug("The result data you request is non-existent")
+        raise ValueError("The result data you request is non-existent")
+
     r.raise_for_status()
     return r.json()["results"]
 
@@ -155,8 +161,8 @@ def get_logging_link(scenario_uuid):
             return url
 
 
-def get_raster_url(scenario_uuid, raster_code):
-    result_list = get_scenario_instance_results(scenario_uuid)
+def get_raster_url(scenario_uuid, raster_code, subendpoint=None):
+    result_list = get_scenario_instance_results(scenario_uuid, subendpoint)
 
     for result in result_list:
         if result["code"] == raster_code:
@@ -164,10 +170,10 @@ def get_raster_url(scenario_uuid, raster_code):
             return raster_url
 
 
-def get_raster(scenario_uuid, raster_code):
+def get_raster(scenario_uuid, raster_code, subendpoint=None):
     """return json of raster based on scenario uuid and raster type"""
 
-    raster_url = get_raster_url(scenario_uuid, raster_code)
+    raster_url = get_raster_url(scenario_uuid, raster_code, subendpoint)
 
     r = requests.get(url=raster_url, auth=("__key__", get_api_key()),)
     r.raise_for_status()
@@ -177,7 +183,7 @@ def get_raster(scenario_uuid, raster_code):
 
 
 def create_raster_task(
-    raster, scenario_instance, resolution=None, projection=None, bbox=None, time=None
+    raster, scenario_instance, projection=None, resolution=None, bbox=None, time=None
 ):
     """create Lizard raster task"""
     x1 = scenario_instance["origin_x"]
@@ -197,8 +203,8 @@ def create_raster_task(
         pixelsize_x = resolution
         pixelsize_y = resolution
 
-    height = math.ceil((x2 - x1) / pixelsize_x)
-    width = math.ceil((y2 - y1) / pixelsize_y)
+    width = math.ceil((x2 - x1) / pixelsize_x)
+    height = math.ceil((y2 - y1) / pixelsize_y)
 
     url = "{}rasters/{}/data/".format(LIZARD_URL, raster["uuid"])
 
@@ -211,6 +217,7 @@ def create_raster_task(
         "format": "geotiff",
         "async": "true",
     }
+
     if time is not None:
         # temporal rasters
         payload["start"] = time
@@ -339,11 +346,25 @@ def download_raster(
             if type(scenario) is str:
                 # assume uuid
                 scenario_instance = get_scenario_instance(scenario)
-                raster = get_raster(scenario, raster_code)
+                if raster_code == "depth-first-dtri":
+                    raster = get_raster(scenario, raster_code, subendpoint="arrival")
+                elif raster_code == "total-damage":
+                    raster = get_raster(scenario, raster_code, subendpoint="damage")
+                else:
+                    raster = get_raster(scenario, raster_code)
             elif type(scenario) is dict:
                 # assume json object
                 scenario_instance = scenario
-                raster = get_raster_from_json(scenario, raster_code)
+                if raster_code == "depth-first-dtri":
+                    raster = get_raster_from_json(
+                        scenario, raster_code, subendpoint="arrival"
+                    )
+                elif raster_code == "total-damage":
+                    raster = get_raster_from_json(
+                        scenario, raster_code, subendpoint="damage"
+                    )
+                else:
+                    raster = get_raster_from_json(scenario, raster_code)
             else:
                 logging.debug("Invalid scenario: supply a json object or uuid string")
                 raise ValueError(
@@ -479,6 +500,20 @@ def download_total_damage_raster(
     download_raster(
         scenario_uuid,
         "total-damage",
+        projection,
+        resolution,
+        bbox=bbox,
+        pathname=pathname,
+    )
+
+
+def download_arrival_time_raster(
+    scenario_uuid, projection, resolution, bbox=None, pathname=None
+):
+    """download Total Damage raster"""
+    download_raster(
+        scenario_uuid,
+        "depth-first-dtri",
         projection,
         resolution,
         bbox=bbox,
@@ -749,7 +784,7 @@ def get_raster_timesteps(raster, interval_hours=None):
     return timesteps
 
 
-def get_raster_from_json(scenario_json, raster_code):
+def get_raster_from_json(scenario_json, raster_code, subendpoint=None):
     """return raster json object from scenario"""
     scenario_uuid = scenario_json["uuid"]
     raster_url = get_raster_url(scenario_uuid, raster_code)
