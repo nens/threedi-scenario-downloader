@@ -355,16 +355,14 @@ def download_raster(
             elif type(scenario) is dict:
                 # assume json object
                 scenario_instance = scenario
-                if raster_code == "depth-first-dtri":
-                    raster = get_raster_from_json(
-                        scenario, raster_code, subendpoint="arrival"
-                    )
-                elif raster_code == "total-damage":
-                    raster = get_raster_from_json(
-                        scenario, raster_code, subendpoint="damage"
-                    )
-                else:
-                    raster = get_raster_from_json(scenario, raster_code)
+                subendpoint_per_raster_code = {
+                   "depth-first_dtri": "arrival",
+                   "total-damage": "damage",
+                }
+                subendpoint = subendpoint_per_raster_code.get(raster_code)
+                raster = get_raster_from_json(
+                    scenario, raster_code, subendpoint=subendpoint)
+                )
             else:
                 logging.debug("Invalid scenario: supply a json object or uuid string")
                 raise ValueError(
