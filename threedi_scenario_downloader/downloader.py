@@ -27,7 +27,7 @@ SCENARIO_FILTERS = {
     "organisation__unique_id": "organisation__unique_id",
     "username": "username__icontains",
     "offset": "offset",
-    }
+}
 
 WATER_DEPTH = "depth-dtri"
 MAX_WATER_DEPTH = "depth-max-dtri"
@@ -123,11 +123,15 @@ def get_scenario_instance_results(scenario_uuid, subendpoint=None):
 
     r = requests.get(url=url, auth=("__key__", get_api_key()))
     r.raise_for_status()
-    
+
     if not r.json()["results"]:
-        logging.debug("The result data you request is non-existent, or your user account does not have the rights to request this data")
-        raise ValueError("The result data you request is non-existent, , or your user account does not have the rights to request this data")
-    
+        logging.debug(
+            "The result data you request is non-existent, or your user account does not have the rights to request this data"
+        )
+        raise ValueError(
+            "The result data you request is non-existent, or your user account does not have the rights to request this data"
+        )
+
     return r.json()["results"]
 
 
@@ -328,6 +332,12 @@ def download_raster(
     task_id_list = transform_to_list(var=None, length=len(scenario_list))
     task_url_list = transform_to_list(var=None, length=len(scenario_list))
 
+    # Helper for subendpoints
+    subendpoint_per_raster_code = {
+        ARRIVAL_TIME: "arrival",
+        TOTAL_DAMAGE: "damage",
+    }
+
     # Wrong input error
     if len(scenario_list) != len(pathname_list):
         logging.debug("Scenarios and output should be of same length")
@@ -353,26 +363,21 @@ def download_raster(
         is_threedi_scenario_list,
     ):
         if is_threedi_scenario:
+
             if type(scenario) is str:
-                # assume uuid
+                # assume 'scenario' is an uuid
                 scenario_instance = get_scenario_instance(scenario)
-                if raster_code == ARRIVAL_TIME:
-                    raster = get_raster(scenario, raster_code, subendpoint="arrival")
-                elif raster_code == TOTAL_DAMAGE:
-                    raster = get_raster(scenario, raster_code, subendpoint="damage")
-                else:
-                    raster = get_raster(scenario, raster_code)
+                subendpoint = subendpoint_per_raster_code.get(raster_code)
+
+                raster = get_raster(scenario, raster_code, subendpoint=subendpoint)
+
             elif type(scenario) is dict:
-                # assume json object
+                # assume 'scenario' is a json object
                 scenario_instance = scenario
-<<<<<<< Updated upstream
-                subendpoint_per_raster_code = {
-                   "depth-first_dtri": "arrival",
-                   "total-damage": "damage",
-                }
+
                 subendpoint = subendpoint_per_raster_code.get(raster_code)
                 raster = get_raster_from_json(
-                    scenario, raster_code, subendpoint=subendpoint)
+                    scenario, raster_code, subendpoint=subendpoint
                 )
             else:
                 logging.debug("Invalid scenario: supply a json object or uuid string")
@@ -481,8 +486,8 @@ def download_maximum_waterdepth_raster(
     download_raster(
         scenario_uuid,
         MAX_WATER_DEPTH,
-        projection,
-        resolution,
+        projection=projection,
+        resolution=resolution,
         bbox=bbox,
         pathname=pathname,
     )
@@ -495,8 +500,8 @@ def download_maximum_waterlevel_raster(
     download_raster(
         scenario_uuid,
         MAX_WATER_LEVEL,
-        projection,
-        resolution,
+        projection=projection,
+        resolution=resolution,
         bbox=bbox,
         pathname=pathname,
     )
@@ -509,8 +514,8 @@ def download_total_damage_raster(
     download_raster(
         scenario_uuid,
         TOTAL_DAMAGE,
-        projection,
-        resolution,
+        projection=projection,
+        resolution=resolution,
         bbox=bbox,
         pathname=pathname,
     )
@@ -523,8 +528,8 @@ def download_arrival_time_raster(
     download_raster(
         scenario_uuid,
         ARRIVAL_TIME,
-        projection,
-        resolution,
+        projection=projection,
+        resolution=resolution,
         bbox=bbox,
         pathname=pathname,
     )
@@ -537,8 +542,8 @@ def download_waterdepth_raster(
     download_raster(
         scenario_uuid,
         WATER_DEPTH,
-        projection,
-        resolution,
+        projection=projection,
+        resolution=resolution,
         bbox=bbox,
         time=time,
         pathname=pathname,
@@ -552,8 +557,8 @@ def download_waterlevel_raster(
     download_raster(
         scenario_uuid,
         WATER_LEVEL,
-        projection,
-        resolution,
+        projection=projection,
+        resolution=resolution,
         bbox=bbox,
         time=time,
         pathname=pathname,
@@ -567,8 +572,8 @@ def download_precipitation_raster(
     download_raster(
         scenario_uuid,
         PRECIPITATION,
-        projection,
-        resolution,
+        projection=projection,
+        resolution=resolution,
         bbox=bbox,
         time=time,
         pathname=pathname,
