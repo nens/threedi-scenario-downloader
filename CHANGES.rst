@@ -4,7 +4,7 @@ Changelog of threedi-scenario-downloader
 1.1 (unreleased)
 ----------------
 
-- Nothing changed yet.
+- Added support for sub-endpoints "/api/v4/scenarios/{uuid}/results/damage/" and "/api/v4/scenarios/{uuid}/results/arrival/"
 
 
 1.0 (2023-05-15)
