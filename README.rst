@@ -52,10 +52,10 @@ or::
 Downloading (temporal) rasters of specific scenarios can be done using the
 following methods::
 
-  >>> dl.download_maximum_waterdepth_raster("scenario_uuid","EPSG:28992",10)
+  >>> dl.download_maximum_waterdepth_raster("scenario_uuid",projection="EPSG:28992",resolution=10)
   #download the full extent of the maximum waterdepth of the given scenario_uuid with a 10 meter resolution in the RD New/Amersfoort projection (EPSG:28992)
 
-  >>> dl.download_waterdepth_raster("scenario_uuid","EPSG:28992",10,"2019-01-01T02:00")
+  >>> dl.download_waterdepth_raster("scenario_uuid",projection="EPSG:28992",resolution=10,time="2019-01-01T02:00")
   #download the full extend of the waterdepth at the supplied timestamp given scenario_uuid, on 10 meter resolution in the RD New/Amersfoort projection (EPSG:28992)
 
 The raster download methods creates a task for the API. Depending on the size
