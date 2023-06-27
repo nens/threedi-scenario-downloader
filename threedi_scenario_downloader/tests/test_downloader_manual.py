@@ -24,7 +24,7 @@ def test_api_key():
 def test_download_maximum_waterdepth_raster():
     downloader.download_maximum_waterdepth_raster(
         SCENARIO_UUID,
-        "EPSG:28992",
+        projection="EPSG:28992",
         resolution=1000,
         bbox=None,
         pathname="threedi_scenario_downloader/tests/testdata/max_waterdepth.tif",
@@ -91,7 +91,12 @@ def test_get_raster_download_link():
     raster = downloader.get_raster(SCENARIO_UUID, "depth-max-dtri")
     scenario_instance = downloader.get_scenario_instance(SCENARIO_UUID)
     download_url = downloader.get_raster_download_link(
-        raster, scenario_instance, "EPSG:4326", 10, bbox=None, time=None
+        raster,
+        scenario_instance,
+        projection="EPSG:4326",
+        resolution=10,
+        bbox=None,
+        time=None,
     )
     assert download_url is not None
 
@@ -135,7 +140,7 @@ def test_download_raster_batch():
 
 def test_get_raster_timesteps():
     raster = downloader.get_raster(SCENARIO_UUID, "s1-dtri")
-    timesteps = downloader.get_raster_timesteps(raster, interval_hours=None)
+    timesteps = downloader.get_raster_timesteps(raster=raster, interval_hours=None)
     assert isinstance(timesteps, list) and all(
         isinstance(step, str) for step in timesteps
     )
