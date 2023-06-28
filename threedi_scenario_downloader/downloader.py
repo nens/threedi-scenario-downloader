@@ -29,21 +29,21 @@ SCENARIO_FILTERS = {
     "offset": "offset",
 }
 
-"""results endpoint"""
+#results endpoint
 WATER_DEPTH = "depth-dtri"
 MAX_WATER_DEPTH = "depth-max-dtri"
 WATER_LEVEL = "s1-dtri"
 RATE_OF_RISE = "rise-velocity-quad"
 PRECIPITATION = "rain-quad"
 
-"""basic sub-endpoint"""
+#basic sub-endpoint
 MAX_FLOW_VELOCITY = "ucr-max-quad"
 MAX_WATER_LEVEL = "s1-max-dtri"
 
-"""arrival sub-endpoint"""
+#arrival sub-endpoint
 ARRIVAL_TIME = "depth-first-dtri"
 
-"""damage sub-endpoint"""
+#damage sub-endpoint
 TOTAL_DAMAGE = "total-damage"
 
 
