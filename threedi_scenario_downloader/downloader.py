@@ -218,6 +218,7 @@ def create_raster_task(
     width = abs((x2 - x1) / pixelsize_x)
     height = abs((y2 - y1) / pixelsize_y)
 
+    # Check if pixelsize fits the extent, if not, to maintain pixelsize, enlarge the extent
     if not width.is_integer():
         width = math.ceil(width)
         x2 = (width * pixelsize_x) + x1
