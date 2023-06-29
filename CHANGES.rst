@@ -1,7 +1,7 @@
 Changelog of threedi-scenario-downloader
 ===================================================
 
-1.2 (unreleased)
+1.2 (2023-06-29)
 ----------------
 
 - Basic sub-endpoint added.
