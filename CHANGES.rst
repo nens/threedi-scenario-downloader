@@ -4,7 +4,11 @@ Changelog of threedi-scenario-downloader
 1.2 (unreleased)
 ----------------
 
-- Nothing changed yet.
+- Basic sub-endpoint added.
+
+- Small fixes.
+
+- Resolution is now guaranteed.
 
 
 1.1 (2023-06-13)
