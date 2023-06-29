@@ -205,8 +205,6 @@ def create_raster_task(
     x2 = scenario_instance["upper_bound_x"]
     y2 = scenario_instance["upper_bound_y"]
 
-    bbox = "{},{},{},{}".format(x1, y1, x2, y2)
-
     if projection is None:
         projection = raster["projection"]
 
@@ -217,8 +215,18 @@ def create_raster_task(
         pixelsize_x = resolution
         pixelsize_y = resolution
 
-    width = math.ceil((x2 - x1) / pixelsize_x)
-    height = math.ceil((y2 - y1) / pixelsize_y)
+    width = abs((x2 - x1) / pixelsize_x)
+    height = abs((y2 - y1) / pixelsize_y)
+
+    # Check if pixelsize fits the extent, if not, to maintain pixelsize, enlarge the extent
+    if not width.is_integer():
+        width = math.ceil(width)
+        x2 = (width * pixelsize_x) + x1
+    if not height.is_integer():
+        height = math.ceil(height)
+        y2 = (height * pixelsize_y) + y1
+
+    bbox = "{},{},{},{}".format(x1, y1, x2, y2)
 
     url = "{}rasters/{}/data/".format(LIZARD_URL, raster["uuid"])
 
