@@ -39,7 +39,7 @@ def test_download_waterdepth_raster():
         SCENARIO_UUID,
         "EPSG:28992",
         1000,
-        "2018-06-02T06:00:00Z",
+        "2023-06-02T06:00:00Z",
         bbox=None,
         pathname="threedi_scenario_downloader/tests/testdata/waterdepth.tif",
     )
@@ -52,7 +52,7 @@ def test_download_waterdepth_raster_reprojected_bounds():
         SCENARIO_UUID,
         "EPSG:28992",
         1000,
-        "2018-06-02T06:00:00Z",
+        "2023-06-02T06:00:00Z",
         bbox=bbox,
         pathname="threedi_scenario_downloader/tests/testdata/waterdepth_reprojected.tif",
     )
