@@ -343,7 +343,7 @@ def download_raster(
     bbox=None,
     time=None,
     pathname=None,
-    is_threedi_scenario=True,  # For rasters that are not a Threedi result.
+    is_threedi_scenario=True,  # Set to False when requesting rasters that are not a Threedi result.
     export_task_csv=None,
 ):
     """
@@ -394,8 +394,7 @@ def download_raster(
     if len(scenario_list) != len(pathname_list):
         logging.debug("Scenarios and output should be of same length")
         raise ValueError(
-            """scenario_list and pathname_list
-                         are of different length"""
+            "scenario_list and pathname_list are of different length"
         )
 
     tasks = []
@@ -450,14 +449,12 @@ def download_raster(
                 raster["uuid"] = scenario
             else:
                 print(
-                    """Invalid scenario: supply a uuid string and bounding
-                      box. Scenario: {}""".format(
+                    "Invalid scenario: supply a uuid string and bounding box. Scenario: {}".format(
                         scenario
                     )
                 )
                 logging.debug(
-                    """Invalid scenario: supply a
-                              uuid string and bounding box"""
+                    "Invalid scenario: supply a uuid string and bounding box"
                 )
         # Send task to lizard
         logging.debug("Creating task with the following parameters:")
@@ -940,10 +937,7 @@ def get_raster_from_json(scenario_json, raster_code, subendpoint=None):
 
 def time_in_range(start, end, x):
     """Return true if x is in the range [start, end]"""
-    if start <= end:
-        return start <= x <= end
-    else:
-        return start <= x or x <= end
+    return start <= x <= end
 
 
 def check_temporal_request(scenario_instance, time):
@@ -956,10 +950,7 @@ def check_temporal_request(scenario_instance, time):
 
     if not time_in_range(start, end, requested_time):
         raise ValueError(
-            """Time requested ({0}) not in temporal range of scenario
-            ({1} - {2}), choose a different time.""".format(
-                time, start_stamp, end_stamp
-            )
+            "Time requested ({0}) not in temporal range of scenario ({1} - {2}), choose a different time.".format(time, start_stamp, end_stamp)
         )
 
 
@@ -1002,8 +993,7 @@ def resume_download_tasks(task_file, overwrite=False):
                     except HTTPError as err:
                         if err.code == 503:
                             logging.debug(
-                                """503 Server Error: Lizard has lost it.
-                                Let's ignore this."""
+                                "503 Server Error: Lizard has lost it.Let's ignore this."
                             )
                             task_status = "UNKNOWN"
                         else:
