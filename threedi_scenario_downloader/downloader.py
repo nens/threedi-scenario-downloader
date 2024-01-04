@@ -350,7 +350,7 @@ def download_raster(
     Download raster.
     To download multiple rasters at the same time, simply pass the required
     input parameters as list.
-    Scenario and pathname should be of same length. Other paramerts can be
+    Scenario and pathname should be of same length. Other parameters can be
     tuple to apply the same settings to all rasters.
     Time format is '%Y-%m-%dT%H:%M:%SZ'.
     """
