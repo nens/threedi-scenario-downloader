@@ -235,13 +235,12 @@ def create_raster_task(
             xx1, yy1, xx2, yy2 = [float(i) for i in bbox.split(",")]
         if abs(xx2 - xx1) > abs(x2 - x1):
             raise ValueError("Chosen bbox wider than scenario extend")
-        elif abs(yy2 - yy1) > abs(y2 - y1):
+        if abs(yy2 - yy1) > abs(y2 - y1):
             raise ValueError("Chosen bbox taller than scenario extend")
-        else:
-            x1 = xx1
-            y1 = yy1
-            x2 = xx2
-            y2 = yy2
+        x1 = xx1
+        y1 = yy1
+        x2 = xx2
+        y2 = yy2
 
     if projection is None:
         projection = raster["projection"]
