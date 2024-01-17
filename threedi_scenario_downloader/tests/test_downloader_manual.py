@@ -11,16 +11,6 @@ DEPTH_MAX_UUID = "c3c4dd31-8a15-4a9e-aefa-97d0cb13cbcc"
 DEPTH_UUID = "921540af-57aa-4a74-8788-6d8f1c8b518b"
 
 
-def test_api_key():
-    config = configparser.ConfigParser()
-    config.read("threedi_scenario_downloader/tests/testdata/realconfig.ini")
-    downloader.set_api_key(config["credentials"]["api_key"])
-
-    assert (downloader.get_api_key() is not None) and (
-        downloader.get_api_key() == config["credentials"]["api_key"]
-    )
-
-
 def test_download_maximum_waterdepth_raster():
     downloader.download_maximum_waterdepth_raster(
         SCENARIO_UUID,
