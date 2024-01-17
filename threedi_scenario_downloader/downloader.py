@@ -135,7 +135,7 @@ def get_scenario_instance_results(scenario_uuid, subendpoint=None):
     r.raise_for_status()
 
     if not r.json()["results"]:
-        logging.debug(
+        logger.debug(
             """The result data you request is non-existent, or your user
             account does not have the rights to request this data"""
         )
@@ -317,7 +317,7 @@ def get_task_download_url(task_uuid):
 
 def download_file(url, path):
     """download url to specified path"""
-    logging.debug(f"Start downloading file: {url}")
+    logger.debug(f"Start downloading file: {url}")
     r = requests.get(url, stream=True)
     r.raise_for_status()
     with open(path, "wb") as file:
@@ -330,10 +330,10 @@ def download_task(task_uuid, pathname=None):
     if get_task_status(task_uuid) == "SUCCESS":
         download_url = get_task_download_url(task_uuid)
         if pathname is None:
-            logging.debug(f"download_url: {download_url}")
-            logging.debug(f"urlparse(download_url): {urlparse(download_url)}")
+            logger.debug(f"download_url: {download_url}")
+            logger.debug(f"urlparse(download_url): {urlparse(download_url)}")
             pathname = os.path.basename(urlparse(download_url).path)
-            logging.debug(pathname)
+            logger.debug(pathname)
         download_file(download_url, pathname)
 
 
@@ -395,7 +395,7 @@ def download_raster(
 
     # Wrong input error
     if len(scenario_list) != len(pathname_list):
-        logging.debug("Scenarios and output should be of same length")
+        logger.debug("Scenarios and output should be of same length")
         raise ValueError("scenario_list and pathname_list are of different length")
 
     tasks = []
@@ -434,7 +434,7 @@ def download_raster(
                     scenario, raster_code, subendpoint=subendpoint
                 )
             else:
-                logging.debug(
+                logger.debug(
                     """Invalid scenario: supply a json object
                               or uuid string"""
                 )
@@ -453,15 +453,15 @@ def download_raster(
                         scenario
                     )
                 )
-                logging.debug("Invalid scenario: supply a uuid string and bounding box")
+                logger.debug("Invalid scenario: supply a uuid string and bounding box")
         # Send task to lizard
-        logging.debug("Creating task with the following parameters:")
-        logging.debug(f"raster: {raster}")
-        logging.debug(f"projection: {projection}")
-        logging.debug(f"resolution: {resolution}")
-        logging.debug(f"scenario_instance: {scenario_instance}")
-        logging.debug(f"bbox: {bbox}")
-        logging.debug(f"time: {time}")
+        logger.debug("Creating task with the following parameters:")
+        logger.debug(f"raster: {raster}")
+        logger.debug(f"projection: {projection}")
+        logger.debug(f"resolution: {resolution}")
+        logger.debug(f"scenario_instance: {scenario_instance}")
+        logger.debug(f"bbox: {bbox}")
+        logger.debug(f"time: {time}")
         task = create_raster_task(
             raster,
             scenario_instance,
@@ -475,7 +475,7 @@ def download_raster(
         tasks.append(task)
 
     if export_task_csv is not None:
-        logging.debug("Exporting tasks to csv")
+        logger.debug("Exporting tasks to csv")
 
         task_export = []
 
@@ -485,7 +485,7 @@ def download_raster(
         ):
             task_export.append({"uuid": task_id, "url": task_url, "pathname": pathname})
 
-        logging.debug(f"task_export: {task_export}")
+        logger.debug(f"task_export: {task_export}")
         with open(export_task_csv, "w", newline="") as f:
             # using csv.writer method from CSV package
             field_names = ["uuid", "url", "pathname"]
@@ -506,11 +506,11 @@ def download_raster(
                 if task_status == "SUCCESS":
                     # task is a succes, return download url
                     try:
-                        logging.debug(
+                        logger.debug(
                             f"""Task succeeded, start
                             downloading url: {get_task_download_url(task_uuid)}"""
                         )
-                        logging.debug(
+                        logger.debug(
                             f"Remaining tasks: {processed_list.count(False) - 1}"
                         )
                         download_task(task_uuid, pathname)
@@ -518,7 +518,7 @@ def download_raster(
 
                     except HTTPError as err:
                         if err.code == 503:
-                            logging.debug(
+                            logger.debug(
                                 """503 Server Error: Lizard has lost it.
                                 Let's ignore this."""
                             )
@@ -529,7 +529,7 @@ def download_raster(
                 elif task_status in ("PENDING", "UNKNOWN", "STARTED", "RETRY"):
                     pass
                 else:
-                    logging.debug(f"Task {task_uuid} failed, status was: {task_status}")
+                    logger.debug(f"Task {task_uuid} failed, status was: {task_status}")
                     processed_list[index] = True
         sleep(5)
 
@@ -670,21 +670,21 @@ def download_precipitation_raster(
 def download_raw_results(scenario_uuid, pathname=None):
     """downloads the 3Di NetCDF file of the supplied scenario"""
     url = get_netcdf_link(scenario_uuid)
-    logging.debug(f"Start downloading raw results: {url}")
+    logger.debug(f"Start downloading raw results: {url}")
     download_file(url, pathname)
 
 
 def download_aggregated_results(scenario_uuid, pathname=None):
     """downloads the 3Di aggregated NetCDF file of the supplied scenario"""
     url = get_aggregation_netcdf_link(scenario_uuid)
-    logging.debug(f"Start downloading aggregated results: {url}")
+    logger.debug(f"Start downloading aggregated results: {url}")
     download_file(url, pathname)
 
 
 def download_logging_results(scenario_uuid, pathname=None):
     """downloads the 3Di logging of the supplied scenario"""
     url = get_logging_link(scenario_uuid)
-    logging.debug(f"Start downloading logging results: {url}")
+    logger.debug(f"Start downloading logging results: {url}")
     download_file(url, pathname)
 
 
@@ -692,7 +692,7 @@ def download_grid_administration(scenario_uuid, pathname=None):
     """downloads the 3Di grid administration (.h5 file) of
     the supplied scenario"""
     url = get_gridadmin_link(scenario_uuid)
-    logging.debug(f"Start downloading grid administration: {url}")
+    logger.debug(f"Start downloading grid administration: {url}")
     download_file(url, pathname)
 
 
@@ -750,21 +750,21 @@ def get_raster_download_link(
     )
     task_uuid = task["task_id"]
 
-    logging.debug(f"Start waiting for task {task_uuid} to finish")
+    logger.debug(f"Start waiting for task {task_uuid} to finish")
     task_status = get_task_status(task_uuid)
     processing = True
     while processing:
         task_status = get_task_status(task_uuid)
         if task_status in ("PENDING", "UNKNOWN", "STARTED", "RETRY"):
-            logging.debug(f"Still waiting for task {task_uuid}")
+            logger.debug(f"Still waiting for task {task_uuid}")
             sleep(5)
         elif task_status == "SUCCESS":
-            logging.debug("Task completed")
+            logger.debug("Task completed")
             sleep(5)
             download_url = get_task_download_url(task_uuid)
             return download_url
         else:
-            logging.debug("Task failed")
+            logger.debug("Task failed")
             return None
 
 
@@ -972,7 +972,7 @@ def resume_download_tasks(task_file, overwrite=False):
         for row in reader:
             unprocessed_tasks.append(row)
             task_url = row["url"]
-            logging.debug(f"Reading task file, line: {task_url}")
+            logger.debug(f"Reading task file, line: {task_url}")
 
     while len(unprocessed_tasks) > 0:
         for task in unprocessed_tasks:
@@ -990,7 +990,7 @@ def resume_download_tasks(task_file, overwrite=False):
                         download_task(task_uuid=uuid, pathname=pathname)
                     except HTTPError as err:
                         if err.code == 503:
-                            logging.debug(
+                            logger.debug(
                                 "503 Server Error: Lizard has lost it.Let's ignore this."
                             )
                             task_status = "UNKNOWN"
@@ -1004,5 +1004,5 @@ def resume_download_tasks(task_file, overwrite=False):
             elif task_status in ("PENDING", "UNKNOWN", "STARTED", "RETRY"):
                 pass
             else:
-                logging.debug(f"Task {uuid} failed, status was: {task_status}")
+                logger.debug(f"Task {uuid} failed, status was: {task_status}")
         sleep(5)
