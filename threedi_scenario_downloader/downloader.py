@@ -534,9 +534,7 @@ def download_raster(
                 elif task_status in ("PENDING", "UNKNOWN", "STARTED", "RETRY"):
                     pass
                 else:
-                    logging.debug(
-                        f"Task {task_uuid} failed, status was: {task_status}"
-                    )
+                    logging.debug(f"Task {task_uuid} failed, status was: {task_status}")
                     processed_list[index] = True
         sleep(5)
 
@@ -1012,7 +1010,5 @@ def resume_download_tasks(task_file, overwrite=False):
             elif task_status in ("PENDING", "UNKNOWN", "STARTED", "RETRY"):
                 pass
             else:
-                logging.debug(
-                    f"Task {uuid} failed, status was: {task_status}"
-                )
+                logging.debug(f"Task {uuid} failed, status was: {task_status}")
         sleep(5)
