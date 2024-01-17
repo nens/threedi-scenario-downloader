@@ -206,7 +206,10 @@ def get_raster(scenario_uuid, raster_code, subendpoint=None):
         scenario_uuid=scenario_uuid, raster_code=raster_code, subendpoint=subendpoint
     )
 
-    r = requests.get(url=raster_url, auth=("__key__", get_api_key()),)
+    r = requests.get(
+        url=raster_url,
+        auth=("__key__", get_api_key()),
+    )
     r.raise_for_status()
 
     raster = r.json()
@@ -327,7 +330,6 @@ def download_task(task_uuid, pathname=None):
     if get_task_status(task_uuid) == "SUCCESS":
         download_url = get_task_download_url(task_uuid)
         if pathname is None:
-
             logging.debug("download_url: {}".format(download_url))
             logging.debug("urlparse(download_url): {}".format(urlparse(download_url)))
             pathname = os.path.basename(urlparse(download_url).path)
@@ -354,6 +356,7 @@ def download_raster(
     tuple to apply the same settings to all rasters.
     Time format is '%Y-%m-%dT%H:%M:%SZ'.
     """
+
     # If task is called for single raster, prepare list.
     def transform_to_list(var, length=1):
         """Transform input to list if for instance only one input is given"""
@@ -393,9 +396,7 @@ def download_raster(
     # Wrong input error
     if len(scenario_list) != len(pathname_list):
         logging.debug("Scenarios and output should be of same length")
-        raise ValueError(
-            "scenario_list and pathname_list are of different length"
-        )
+        raise ValueError("scenario_list and pathname_list are of different length")
 
     tasks = []
     # Create tasks
@@ -417,7 +418,6 @@ def download_raster(
         is_threedi_scenario_list,
     ):
         if is_threedi_scenario:
-
             if type(scenario) is str:
                 # assume 'scenario' is an uuid
                 scenario_instance = get_scenario_instance(scenario)
@@ -453,9 +453,7 @@ def download_raster(
                         scenario
                     )
                 )
-                logging.debug(
-                    "Invalid scenario: supply a uuid string and bounding box"
-                )
+                logging.debug("Invalid scenario: supply a uuid string and bounding box")
         # Send task to lizard
         logging.debug("Creating task with the following parameters:")
         logging.debug("raster: {}".format(raster))
@@ -489,7 +487,6 @@ def download_raster(
 
         logging.debug("task_export: {}".format(task_export))
         with open(export_task_csv, "w", newline="") as f:
-
             # using csv.writer method from CSV package
             field_names = ["uuid", "url", "pathname"]
             writer = csv.DictWriter(
@@ -504,7 +501,6 @@ def download_raster(
             enumerate(task_id_list), pathname_list, processed_list
         ):
             if not processed:
-
                 task_status = get_task_status(task_uuid)
 
                 if task_status == "SUCCESS":
@@ -732,9 +728,7 @@ def rasters_in_scenario(scenario_json, subendpoint=None):
     temporal_rasters = []
     static_rasters = []
     for result in result_list:
-
         if result["raster"]:
-
             raster_url = result["raster"]
             raster_instance = get_raster(scenario_uuid, result["code"])
             name_3di = result["name"]
@@ -801,7 +795,11 @@ def get_static_rasters_links(
 
 
 def get_temporal_raster_links(
-    temporal_raster, projection=None, resolution=None, bbox=None, interval_hours=None,
+    temporal_raster,
+    projection=None,
+    resolution=None,
+    bbox=None,
+    interval_hours=None,
 ):
     """return a dict of urls to geotiff files of a temporal raster
     the dict items are formatted as name_3di_datetime: link.tif"""
@@ -834,7 +832,11 @@ def get_temporal_raster_links(
 
 
 def get_temporal_rasters_links(
-    temporal_rasters, projection=None, resolution=None, bbox=None, interval_hours=None,
+    temporal_rasters,
+    projection=None,
+    resolution=None,
+    bbox=None,
+    interval_hours=None,
 ):
     """get links to all temporal rasters"""
     temporal_rasters_urls = {}
@@ -927,7 +929,10 @@ def get_raster_from_json(scenario_json, raster_code, subendpoint=None):
     scenario_uuid = scenario_json["uuid"]
     raster_url = get_raster_url(scenario_uuid=scenario_uuid, raster_code=raster_code)
 
-    r = requests.get(url=raster_url, auth=("__key__", get_api_key()),)
+    r = requests.get(
+        url=raster_url,
+        auth=("__key__", get_api_key()),
+    )
 
     r.raise_for_status()
 
@@ -950,7 +955,9 @@ def check_temporal_request(scenario_instance, time):
 
     if not time_in_range(start, end, requested_time):
         raise ValueError(
-            "Time requested ({0}) not in temporal range of scenario ({1} - {2}), choose a different time.".format(time, start_stamp, end_stamp)
+            "Time requested ({0}) not in temporal range of scenario ({1} - {2}), choose a different time.".format(
+                time, start_stamp, end_stamp
+            )
         )
 
 
