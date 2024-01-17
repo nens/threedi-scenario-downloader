@@ -299,14 +299,17 @@ def create_raster_task(
 
 
 # From here untested methods are added
-def get_task_status(task_uuid):
+def get_task_status(task_uuid) -> str:
     """return status of task"""
     url = f"{LIZARD_URL}tasks/{task_uuid}/"
     try:
         r = requests.get(url=url, auth=("__key__", get_api_key()))
         r.raise_for_status()
         return r.json()["status"]
-    except:
+    except requests.exceptions.RequestException:
+        log.exception(
+            f"Error while requesting task status for task {task_uuid}"
+        )
         return "UNKNOWN"
 
 
