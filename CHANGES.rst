@@ -1,7 +1,7 @@
 Changelog of threedi-scenario-downloader
 ===================================================
 
-1.3 (unreleased)
+1.3 (2024-01-17)
 ----------------
 
 - Several fixes to adjust to changes in lizard's behaviour.
