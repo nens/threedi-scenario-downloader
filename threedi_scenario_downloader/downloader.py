@@ -15,8 +15,8 @@ import math
 LIZARD_URL = "https://demo.lizard.net/api/v4/"
 RESULT_LIMIT = 10
 
-log = logging.getLogger()
-AUTH = {}
+_AUTH = {}  # Used to store the api_key globally. Use set/get_api_key.
+
 
 SCENARIO_FILTERS = {
     "name": "name",
@@ -49,18 +49,23 @@ ARRIVAL_TIME = "depth-first-dtri"
 TOTAL_DAMAGE = "total-damage"
 
 
+log = logging.getLogger()
+
+
 def set_logging_level(level):
     """set logging level to the supplied level"""
 
     log.level = level
 
 
-def set_api_key(api_key):
-    AUTH["api_key"] = api_key
+def set_api_key(api_key: str):
+    _AUTH["api_key"] = api_key
 
 
-def get_api_key():
-    return AUTH["api_key"]
+def get_api_key() -> str:
+    if not _AUTH.get("api_key"):
+        raise RuntimeError("api key hasn't been set with set_api_key()")
+    return _AUTH["api_key"]
 
 
 def print_negative_response(response):
