@@ -13,7 +13,9 @@ def api_key_for_lizard() -> str:
     """Set up api key and return it"""
     api_key_file = Path(API_KEY_FILENAME)
     if not api_key_file.exists():
-        raise RuntimeError(f"{API_KEY_FILENAME} not found: see the end of the README")
+        raise RuntimeError(
+            f"{API_KEY_FILENAME} not found: see the end of the README"
+        )  # pragma: no cover
     api_key = api_key_file.read_text().strip()
     downloader.set_api_key(api_key)
     return api_key
