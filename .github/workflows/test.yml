@@ -30,6 +30,7 @@ jobs:
           venv/bin/ruff check threedi_scenario_downloader
           venv/bin/ruff format threedi_scenario_downloader
 
-      # TODO: add api key
       - name: Run pytest
-        run: venv/bin/pytest
+        run: |
+          echo ${{ secrets.TEST_API_KEY }} > test_api_key.txt
+          venv/bin/pytest
