@@ -368,10 +368,10 @@ def download_raster(
     # If task is called for single raster, prepare list.
     def transform_to_list(var, length=1):
         """Transform input to list if for instance only one input is given"""
-        if type(var) is list:
+        if isinstance(var, list):
             return var
         else:
-            if type(var) is tuple:
+            if isinstance(var, tuple):
                 return list(var) * length
             else:  # type(var) in (str, dict, int, type(None), bool, float):
                 return [var] * length
@@ -426,14 +426,14 @@ def download_raster(
         is_threedi_scenario_list,
     ):
         if is_threedi_scenario:
-            if type(scenario) is str:
+            if isinstance(scenario, str):
                 # assume 'scenario' is an uuid
                 scenario_instance = get_scenario_instance(scenario)
                 subendpoint = subendpoint_per_raster_code.get(raster_code)
 
                 raster = get_raster(scenario, raster_code, subendpoint=subendpoint)
 
-            elif type(scenario) is dict:
+            elif isinstance(scenario, dict):
                 # assume 'scenario' is a json object
                 scenario_instance = scenario
 
@@ -451,7 +451,7 @@ def download_raster(
                 )
         else:
             # If no bbox are passed the function will probably crash.
-            if (type(scenario) is str) and (bbox is not None):
+            if isinstance(scenario, str) and (bbox is not None):
                 raster = {}
                 scenario_instance = {}
                 raster["uuid"] = scenario
