@@ -957,7 +957,7 @@ def check_temporal_request(scenario_instance, time):
         )
 
 
-def request_json_from_url(url, params=None) -> str:
+def request_json_from_url(url, params=None) -> dict:
     """retrieve json object from url"""
     r = requests.get(url=url, auth=("__key__", get_api_key()), params=params)
     r.raise_for_status()
