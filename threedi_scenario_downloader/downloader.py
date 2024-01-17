@@ -778,6 +778,7 @@ def get_static_rasters_links(
         name = static_raster["name_3di"]
         static_raster_url = get_raster_download_link(
             raster=static_raster,
+            # TODO: parameter scenario_instance is missing!
             projection=projection,
             resolution=resolution,
             bbox=bbox,
@@ -804,11 +805,16 @@ def get_temporal_raster_links(
     for timestep in timesteps:
         download_url = get_raster_download_link(
             raster=temporal_raster,
+            # TODO: parameter scenario_instance is missing!
             projection=projection,
             resolution=resolution,
             bbox=bbox,
             time=timestep,
         )
+        if timestep is None:
+            # Should not happen, but makes the code checker happy that
+            # None.split() won't happen :-)
+            raise ValueError("Timestep 'None' found, indicating non-temporal raster")
         url_timestep = os.path.splitext(download_url)[0].split("_")[-1]
         # Lizard returns the nearest timestep based on the timestep request
         timestep_url_format = "{}Z".format(timestep.split(".")[0].replace("-", ""))
