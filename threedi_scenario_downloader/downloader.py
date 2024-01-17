@@ -315,7 +315,7 @@ def get_task_download_url(task_uuid):
 def download_file(url, path):
     """download url to specified path"""
     logging.debug("Start downloading file: {}".format(url))
-    r = requests.get(url, auth=("__key__", get_api_key()), stream=True)
+    r = requests.get(url, stream=True)
     r.raise_for_status()
     with open(path, "wb") as file:
         for chunk in r.iter_content(1024 * 1024 * 10):
