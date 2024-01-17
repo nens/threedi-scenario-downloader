@@ -187,7 +187,7 @@ def get_logging_link(scenario_uuid):
             return url
 
 
-def get_raster_url(scenario_uuid, raster_code, subendpoint=None):
+def get_raster_url(scenario_uuid, raster_code, subendpoint=None) -> str:
     result_list = get_scenario_instance_results(
         scenario_uuid=scenario_uuid, subendpoint=subendpoint
     )
@@ -196,9 +196,11 @@ def get_raster_url(scenario_uuid, raster_code, subendpoint=None):
         if result["code"] == raster_code:
             raster_url = result["raster"]
             return raster_url
+    # Nothing found, raise an exception to be nice and explicit.
+    raise ValueError(f"Raster url for raster_code {raster_code} not found")
 
 
-def get_raster(scenario_uuid, raster_code, subendpoint=None):
+def get_raster(scenario_uuid, raster_code, subendpoint=None) -> dict:
     """return json of raster based on scenario uuid and raster type"""
 
     raster_url = get_raster_url(
@@ -358,7 +360,7 @@ def download_raster(
     """
 
     # If task is called for single raster, prepare list.
-    def transform_to_list(var, length=1):
+    def transform_to_list(var, length=1) -> list:
         """Transform input to list if for instance only one input is given"""
         if isinstance(var, list):
             return var
@@ -448,12 +450,9 @@ def download_raster(
                 scenario_instance = {}
                 raster["uuid"] = scenario
             else:
-                print(
-                    "Invalid scenario: supply a uuid string and bounding box. Scenario: {}".format(
-                        scenario
-                    )
+                raise ValueError(
+                    f"Invalid scenario: supply a scenario and bounding box. Scenario: {scenario}"
                 )
-                logger.debug("Invalid scenario: supply a uuid string and bounding box")
         # Send task to lizard
         logger.debug("Creating task with the following parameters:")
         logger.debug(f"raster: {raster}")
@@ -916,7 +915,7 @@ def get_raster_timesteps(raster, interval_hours=None):
     return timesteps
 
 
-def get_raster_from_json(scenario_json, raster_code, subendpoint=None):
+def get_raster_from_json(scenario_json, raster_code, subendpoint=None) -> dict:
     """return raster json object from scenario"""
     scenario_uuid = scenario_json["uuid"]
     raster_url = get_raster_url(scenario_uuid=scenario_uuid, raster_code=raster_code)
