@@ -52,12 +52,6 @@ TOTAL_DAMAGE = "total-damage"
 logger = logging.getLogger()
 
 
-def set_logging_level(level):
-    """set logging level to the supplied level"""
-
-    logger.level = level
-
-
 def set_api_key(api_key: str):
     _AUTH["api_key"] = api_key
 
