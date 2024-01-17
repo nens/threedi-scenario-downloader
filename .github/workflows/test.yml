@@ -9,7 +9,8 @@ on:
   pull_request:
 
 jobs:
-  test:
+  lint_and_test:
+    name: Lint and test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
