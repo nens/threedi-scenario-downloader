@@ -432,6 +432,7 @@ def download_raster(
                 scenario_instance = scenario
 
                 subendpoint = subendpoint_per_raster_code.get(raster_code)
+                # TODO: subendpoint isn't used in get_raster_from_json()
                 raster = get_raster_from_json(
                     scenario, raster_code, subendpoint=subendpoint
                 )
