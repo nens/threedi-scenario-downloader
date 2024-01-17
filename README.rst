@@ -94,6 +94,10 @@ coverage. Pure luxury::
 
   $ venv/bin/pytest
 
+Before runningg the tests, create a file (in this directory) called
+``test_api_key.txt`` and add a lizard **api key**. Just the key, on
+one line. The tests will complain otherwise.
+
 The tests **used** to run on travis-ci.org, but we don't use that service
 anymore. Also, new releases were automatically added to pypi there. For now,
 contact Reinout when you need a new release.
