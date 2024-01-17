@@ -41,3 +41,4 @@ docker-compose.override.yml
 *.h5
 *.nc
 *.csv
+/test_api_key.txt
