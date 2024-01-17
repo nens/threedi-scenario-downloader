@@ -49,13 +49,13 @@ ARRIVAL_TIME = "depth-first-dtri"
 TOTAL_DAMAGE = "total-damage"
 
 
-log = logging.getLogger()
+logger = logging.getLogger()
 
 
 def set_logging_level(level):
     """set logging level to the supplied level"""
 
-    log.level = level
+    logger.level = level
 
 
 def set_api_key(api_key: str):
@@ -307,7 +307,7 @@ def get_task_status(task_uuid) -> str:
         r.raise_for_status()
         return r.json()["status"]
     except requests.exceptions.RequestException:
-        log.exception(f"Error while requesting task status for task {task_uuid}")
+        logger.exception(f"Error while requesting task status for task {task_uuid}")
         return "UNKNOWN"
 
 
