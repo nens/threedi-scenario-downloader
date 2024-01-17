@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-"""The downloader part of the threedi_scenario_downloader supplies the user with often used functionality to look up and export 3Di results using the Lizard API"""
+"""The downloader part of the threedi_scenario_downloader supplies the user
+with often used functionality to look up and export 3Di results using the
+Lizard API"""
 from datetime import datetime, timedelta
 from urllib.parse import urlparse
 from urllib.error import HTTPError
@@ -29,21 +31,21 @@ SCENARIO_FILTERS = {
     "offset": "offset",
 }
 
-#results endpoint
+# results endpoint
 WATER_DEPTH = "depth-dtri"
 MAX_WATER_DEPTH = "depth-max-dtri"
 WATER_LEVEL = "s1-dtri"
 RATE_OF_RISE = "rise-velocity-quad"
 PRECIPITATION = "rain-quad"
 
-#basic sub-endpoint
+# basic sub-endpoint
 MAX_FLOW_VELOCITY = "ucr-max-quad"
 MAX_WATER_LEVEL = "s1-max-dtri"
 
-#arrival sub-endpoint
+# arrival sub-endpoint
 ARRIVAL_TIME = "depth-first-dtri"
 
-#damage sub-endpoint
+# damage sub-endpoint
 TOTAL_DAMAGE = "total-damage"
 
 
@@ -109,7 +111,8 @@ def find_scenarios_by_exact_name(name, limit=RESULT_LIMIT):
 
 
 def get_scenario_instance(scenario_uuid):
-    """return scenario instance containing all projection and resolution information"""
+    """return scenario instance containing all projection and resolution
+    information"""
     r = requests.get(
         url="{}scenarios/{}/".format(LIZARD_URL, scenario_uuid),
         auth=("__key__", get_api_key()),
@@ -120,7 +123,8 @@ def get_scenario_instance(scenario_uuid):
 
 
 def get_scenario_instance_results(scenario_uuid, subendpoint=None):
-    """get the scenario instance results, either from basic raster results, or specific results by using a subendpoint (damage and arrival time)"""
+    """get the scenario instance results, either from basic raster results, or
+    specific results by using a subendpoint (damage and arrival time)"""
     get_scenario_instance(scenario_uuid)
 
     if subendpoint:
@@ -133,10 +137,12 @@ def get_scenario_instance_results(scenario_uuid, subendpoint=None):
 
     if not r.json()["results"]:
         logging.debug(
-            "The result data you request is non-existent, or your user account does not have the rights to request this data"
+            """The result data you request is non-existent, or your user
+            account does not have the rights to request this data"""
         )
         raise ValueError(
-            "The result data you request is non-existent, or your user account does not have the rights to request this data"
+            """The result data you request is non-existent, or your user
+            account does not have the rights to request this data"""
         )
 
     return r.json()["results"]
@@ -211,10 +217,30 @@ def create_raster_task(
     raster, scenario_instance, projection=None, resolution=None, bbox=None, time=None
 ):
     """create Lizard raster task"""
+
     x1 = scenario_instance["origin_x"]
     y1 = scenario_instance["origin_y"]
     x2 = scenario_instance["upper_bound_x"]
     y2 = scenario_instance["upper_bound_y"]
+
+    # Take bbox dimensions if not bigger than the scenario extent.
+    if bbox:
+        # Check for bounding dictionary
+        if isinstance(bbox, dict):
+            xx1 = bbox["west"]
+            yy1 = bbox["south"]
+            xx2 = bbox["east"]
+            yy2 = bbox["north"]
+        else:
+            xx1, yy1, xx2, yy2 = [float(i) for i in bbox.split(",")]
+        if abs(xx2 - xx1) > abs(x2 - x1):
+            raise ValueError("Chosen bbox wider than scenario extend")
+        if abs(yy2 - yy1) > abs(y2 - y1):
+            raise ValueError("Chosen bbox taller than scenario extend")
+        x1 = xx1
+        y1 = yy1
+        x2 = xx2
+        y2 = yy2
 
     if projection is None:
         projection = raster["projection"]
@@ -229,7 +255,8 @@ def create_raster_task(
     width = abs((x2 - x1) / pixelsize_x)
     height = abs((y2 - y1) / pixelsize_y)
 
-    # Check if pixelsize fits the extent, if not, to maintain pixelsize, enlarge the extent
+    # Check if pixelsize fits the extent, if not, to maintain pixelsize,
+    # enlarge the extent
     if not width.is_integer():
         width = math.ceil(width)
         x2 = (width * pixelsize_x) + x1
@@ -253,6 +280,7 @@ def create_raster_task(
 
     if time is not None:
         # temporal rasters
+        check_temporal_request(scenario_instance, time)
         payload["start"] = time
 
     r = requests.get(url=url, auth=("__key__", get_api_key()), params=payload)
@@ -287,7 +315,7 @@ def get_task_download_url(task_uuid):
 def download_file(url, path):
     """download url to specified path"""
     logging.debug("Start downloading file: {}".format(url))
-    r = requests.get(url, auth=("__key__", get_api_key()), stream=True)
+    r = requests.get(url, stream=True)
     r.raise_for_status()
     with open(path, "wb") as file:
         for chunk in r.iter_content(1024 * 1024 * 10):
@@ -315,13 +343,16 @@ def download_raster(
     bbox=None,
     time=None,
     pathname=None,
-    is_threedi_scenario=True,  # For lizard rasters that are not a Threedi result.
+    is_threedi_scenario=True,  # Set to False when requesting rasters that are not a Threedi result.
     export_task_csv=None,
 ):
     """
     Download raster.
-    To download multiple rasters at the same time, simply pass the required input parameters as list.
-    Scenario and pathname should be of same length. Other paramerts can be tuple to apply the same settings to all rasters.
+    To download multiple rasters at the same time, simply pass the required
+    input parameters as list.
+    Scenario and pathname should be of same length. Other parameters can be
+    tuple to apply the same settings to all rasters.
+    Time format is '%Y-%m-%dT%H:%M:%SZ'.
     """
     # If task is called for single raster, prepare list.
     def transform_to_list(var, length=1):
@@ -362,7 +393,9 @@ def download_raster(
     # Wrong input error
     if len(scenario_list) != len(pathname_list):
         logging.debug("Scenarios and output should be of same length")
-        raise ValueError("scenario_list and pathname_list are of different length")
+        raise ValueError(
+            "scenario_list and pathname_list are of different length"
+        )
 
     tasks = []
     # Create tasks
@@ -401,7 +434,10 @@ def download_raster(
                     scenario, raster_code, subendpoint=subendpoint
                 )
             else:
-                logging.debug("Invalid scenario: supply a json object or uuid string")
+                logging.debug(
+                    """Invalid scenario: supply a json object
+                              or uuid string"""
+                )
                 raise ValueError(
                     "Invalid scenario: supply a json object or uuid string"
                 )
@@ -412,8 +448,14 @@ def download_raster(
                 scenario_instance = {}
                 raster["uuid"] = scenario
             else:
-                # print("Invalid scenario: supply a uuid string and bounding box. Scenario: {}".format(scenario))
-                logging.debug("Invalid scenario: supply a uuid string and bounding box")
+                print(
+                    "Invalid scenario: supply a uuid string and bounding box. Scenario: {}".format(
+                        scenario
+                    )
+                )
+                logging.debug(
+                    "Invalid scenario: supply a uuid string and bounding box"
+                )
         # Send task to lizard
         logging.debug("Creating task with the following parameters:")
         logging.debug("raster: {}".format(raster))
@@ -469,7 +511,8 @@ def download_raster(
                     # task is a succes, return download url
                     try:
                         logging.debug(
-                            "Task succeeded, start downloading url: {}".format(
+                            """Task succeeded, start
+                            downloading url: {}""".format(
                                 get_task_download_url(task_uuid)
                             )
                         )
@@ -484,7 +527,8 @@ def download_raster(
                     except HTTPError as err:
                         if err.code == 503:
                             logging.debug(
-                                "503 Server Error: Lizard has lost it. Let's ignore this."
+                                """503 Server Error: Lizard has lost it.
+                                Let's ignore this."""
                             )
                             task_status = "UNKNOWN"
                         else:
@@ -578,7 +622,8 @@ def download_waterdepth_raster(
     bbox=None,
     pathname=None,
 ):
-    """download snapshot of Waterdepth raster"""
+    """download snapshot of Waterdepth raster,
+    time format is '%Y-%m-%dT%H:%M:%SZ'."""
     download_raster(
         scenario_uuid,
         WATER_DEPTH,
@@ -598,7 +643,8 @@ def download_waterlevel_raster(
     bbox=None,
     pathname=None,
 ):
-    """download snapshot of Waterlevel raster"""
+    """download snapshot of Waterlevel raster,
+    time format is '%Y-%m-%dT%H:%M:%SZ'."""
     download_raster(
         scenario_uuid,
         WATER_LEVEL,
@@ -618,7 +664,8 @@ def download_precipitation_raster(
     bbox=None,
     pathname=None,
 ):
-    """download snapshot of precipitation raster"""
+    """download snapshot of precipitation raster,
+    time format is '%Y-%m-%dT%H:%M:%SZ'."""
     download_raster(
         scenario_uuid,
         PRECIPITATION,
@@ -652,7 +699,8 @@ def download_logging_results(scenario_uuid, pathname=None):
 
 
 def download_grid_administration(scenario_uuid, pathname=None):
-    """downloads the 3Di grid administration (.h5 file) of the supplied scenario"""
+    """downloads the 3Di grid administration (.h5 file) of
+    the supplied scenario"""
     url = get_gridadmin_link(scenario_uuid)
     logging.debug("Start downloading grid administration: {}".format(url))
     download_file(url, pathname)
@@ -674,7 +722,8 @@ def get_attachment_links(scenario_json):
 
 
 def rasters_in_scenario(scenario_json, subendpoint=None):
-    """return two lists of static and temporal rasters including 3di result name and code"""
+    """return two lists of static and temporal rasters
+    including 3di result name and code"""
     scenario_uuid = scenario_json["uuid"]
     result_list = get_scenario_instance_results(
         scenario_uuid=scenario_uuid, subendpoint=subendpoint
@@ -702,7 +751,7 @@ def rasters_in_scenario(scenario_json, subendpoint=None):
 def get_raster_download_link(
     raster, scenario_instance, resolution=None, projection=None, bbox=None, time=None
 ):
-    """get url to download raster"""
+    """get url to download raster, time format is '%Y-%m-%dT%H:%M:%SZ'."""
     task = create_raster_task(
         raster=raster,
         scenario_instance=scenario_instance,
@@ -735,7 +784,8 @@ def get_static_rasters_links(
     static_rasters, projection=None, resolution=None, bbox=None, time=None
 ):
     """return a dict of urls to geotiff files of static rasters in scenario
-    the dict items are formatted as result_name: link.tif"""
+    the dict items are formatted as result_name: link.tif.
+    Time format is '%Y-%m-%dT%H:%M:%SZ'."""
     static_raster_urls = {}
     for static_raster in static_rasters:
         name = static_raster["name_3di"]
@@ -769,10 +819,10 @@ def get_temporal_raster_links(
             time=timestep,
         )
         url_timestep = os.path.splitext(download_url)[0].split("_")[-1]
-        # Lizard returns the nearest timestep based on the time=timestep request
+        # Lizard returns the nearest timestep based on the timestep request
         timestep_url_format = "{}Z".format(timestep.split(".")[0].replace("-", ""))
         if timestep_url_format == url_timestep:
-            # when requested and retrieved timesteps are equal, use the timestep
+            # when requested and retrieved timesteps are equal, use timestep
             name_timestep = "_".join([name, timestep])
         else:
             # if not equal, indicate the datetime discrepancy in file name
@@ -802,7 +852,8 @@ def get_temporal_rasters_links(
 
 
 def to_datetime_obj(time_string):
-    """returns a list of 'YYYY-MM-DDTHH:MM:SS' formatted timesteps in temporal range of raster object"""
+    """returns a list of '%Y-%m-%dT%H:%M:%SZ'
+    formatted timesteps in temporal range of raster object"""
     if "." in time_string:
         # If the timestamp contains milliseconds
         datetime_obj = datetime.strptime(time_string, "%Y-%m-%dT%H:%M:%S.%fZ")
@@ -814,10 +865,12 @@ def to_datetime_obj(time_string):
 
 
 def get_raster_timesteps(raster, interval_hours=None):
-    """returns a list of 'YYYY-MM-DDTHH:MM:SS' formatted timesteps in temporal range of raster object
+    """returns a list of '%Y-%m-%dT%H:%M:%SZ' formatted timesteps in temporal
+    range of raster object
     Starts at first timestep and ends at last timestep.
     The intermediate timesteps are determined by the interval.
-    When no interval is provided, the first, middle and last timesteps are returned
+    When no interval is provided, the first, middle and last timesteps are
+    returned
     """
     raster_uuid = raster["uuid"]
     if not raster["temporal"]:
@@ -839,7 +892,7 @@ def get_raster_timesteps(raster, interval_hours=None):
 
         # Format the datetime object
         timesteps = [
-            timestep_obj.strftime("%Y-%m-%dT%H:%M:%S")
+            timestep_obj.strftime("%Y-%m-%dT%H:%M:%SZ")
             for timestep_obj in timestep_obj_list
         ]
 
@@ -863,7 +916,7 @@ def get_raster_timesteps(raster, interval_hours=None):
             timestep_obj_list.append(last_timestamp)
 
         timesteps = [
-            timestep_obj.strftime("%Y-%m-%dT%H:%M:%S")
+            timestep_obj.strftime("%Y-%m-%dT%H:%M:%SZ")
             for timestep_obj in timestep_obj_list
         ]
     return timesteps
@@ -880,6 +933,25 @@ def get_raster_from_json(scenario_json, raster_code, subendpoint=None):
 
     raster = r.json()
     return raster
+
+
+def time_in_range(start, end, x):
+    """Return true if x is in the range [start, end]"""
+    return start <= x <= end
+
+
+def check_temporal_request(scenario_instance, time):
+    start_stamp = scenario_instance["simulation_start"]
+    end_stamp = scenario_instance["simulation_end"]
+
+    start = to_datetime_obj(start_stamp)
+    end = to_datetime_obj(end_stamp)
+    requested_time = to_datetime_obj(time)
+
+    if not time_in_range(start, end, requested_time):
+        raise ValueError(
+            "Time requested ({0}) not in temporal range of scenario ({1} - {2}), choose a different time.".format(time, start_stamp, end_stamp)
+        )
 
 
 def request_json_from_url(url, params=None):
@@ -921,7 +993,7 @@ def resume_download_tasks(task_file, overwrite=False):
                     except HTTPError as err:
                         if err.code == 503:
                             logging.debug(
-                                "503 Server Error: Lizard has lost it. Let's ignore this."
+                                "503 Server Error: Lizard has lost it.Let's ignore this."
                             )
                             task_status = "UNKNOWN"
                         else:
