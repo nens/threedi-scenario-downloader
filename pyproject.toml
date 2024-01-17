@@ -13,4 +13,4 @@ known-first-party = ["threedi_scenario_downloader"]
 addopts = ["--black", "--flakes", "--cov", "--cache-clear", "threedi_scenario_downloader"]
 
 [tool.zestreleaser]
-release = yes
+release = true
