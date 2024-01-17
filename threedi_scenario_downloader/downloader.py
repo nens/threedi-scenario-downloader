@@ -1,16 +1,16 @@
-# -*- coding: utf-8 -*-
 """The downloader part of the threedi_scenario_downloader supplies the user
 with often used functionality to look up and export 3Di results using the
 Lizard API"""
-from datetime import datetime, timedelta
-from urllib.parse import urlparse
-from urllib.error import HTTPError
-from time import sleep
-import logging
-import os
-import requests
 import csv
+import logging
 import math
+import os
+from datetime import datetime, timedelta
+from time import sleep
+from urllib.error import HTTPError
+from urllib.parse import urlparse
+
+import requests
 
 LIZARD_URL = "https://demo.lizard.net/api/v4/"
 RESULT_LIMIT = 10
@@ -75,7 +75,7 @@ def print_negative_response(response):
 
 def find_scenarios(limit=RESULT_LIMIT, **kwargs):
     """return json containing scenarios based on supplied filters"""
-    url = "{}scenarios/".format(LIZARD_URL)
+    url = f"{LIZARD_URL}scenarios/"
 
     payload = {"limit": limit}
     for key, value in kwargs.items():
@@ -90,7 +90,7 @@ def find_scenarios(limit=RESULT_LIMIT, **kwargs):
 def find_scenarios_by_model_slug(model_uuid, limit=RESULT_LIMIT):
     """return json containing scenarios based on model slug"""
 
-    url = "{}scenarios/".format(LIZARD_URL)
+    url = f"{LIZARD_URL}scenarios/"
     payload = {"model_name__icontains": model_uuid, "limit": limit}
     r = requests.get(url=url, auth=("__key__", get_api_key()), params=payload)
     r.raise_for_status()
@@ -99,7 +99,7 @@ def find_scenarios_by_model_slug(model_uuid, limit=RESULT_LIMIT):
 
 def find_scenarios_by_name(name, limit=RESULT_LIMIT):
     """return json containing scenarios based on name"""
-    url = "{}scenarios/".format(LIZARD_URL)
+    url = f"{LIZARD_URL}scenarios/"
     payload = {"name__icontains": name, "limit": limit}
     r = requests.get(url=url, auth=("__key__", get_api_key()), params=payload)
     r.raise_for_status()
@@ -108,7 +108,7 @@ def find_scenarios_by_name(name, limit=RESULT_LIMIT):
 
 def find_scenarios_by_exact_name(name, limit=RESULT_LIMIT):
     """return json containing scenarios based on exact name"""
-    url = "{}scenarios/".format(LIZARD_URL)
+    url = f"{LIZARD_URL}scenarios/"
     payload = {"name": name, "limit": limit}
     r = requests.get(url=url, auth=("__key__", get_api_key()), params=payload)
     r.raise_for_status()
@@ -119,7 +119,7 @@ def get_scenario_instance(scenario_uuid):
     """return scenario instance containing all projection and resolution
     information"""
     r = requests.get(
-        url="{}scenarios/{}/".format(LIZARD_URL, scenario_uuid),
+        url=f"{LIZARD_URL}scenarios/{scenario_uuid}/",
         auth=("__key__", get_api_key()),
     )
     r.raise_for_status()
@@ -133,9 +133,9 @@ def get_scenario_instance_results(scenario_uuid, subendpoint=None):
     get_scenario_instance(scenario_uuid)
 
     if subendpoint:
-        url = "{}scenarios/{}/results/{}".format(LIZARD_URL, scenario_uuid, subendpoint)
+        url = f"{LIZARD_URL}scenarios/{scenario_uuid}/results/{subendpoint}"
     else:
-        url = "{}scenarios/{}/results".format(LIZARD_URL, scenario_uuid)
+        url = f"{LIZARD_URL}scenarios/{scenario_uuid}/results"
 
     r = requests.get(url=url, auth=("__key__", get_api_key()))
     r.raise_for_status()
@@ -240,7 +240,7 @@ def create_raster_task(
             xx2 = bbox["east"]
             yy2 = bbox["north"]
         else:
-            xx1, yy1, xx2, yy2 = [float(i) for i in bbox.split(",")]
+            xx1, yy1, xx2, yy2 = (float(i) for i in bbox.split(","))
         if abs(xx2 - xx1) > abs(x2 - x1):
             raise ValueError("Chosen bbox wider than scenario extend")
         if abs(yy2 - yy1) > abs(y2 - y1):
@@ -272,7 +272,7 @@ def create_raster_task(
         height = math.ceil(height)
         y2 = (height * pixelsize_y) + y1
 
-    bbox = "{},{},{},{}".format(x1, y1, x2, y2)
+    bbox = f"{x1},{y1},{x2},{y2}"
 
     url = "{}rasters/{}/data/".format(LIZARD_URL, raster["uuid"])
 
@@ -301,7 +301,7 @@ def create_raster_task(
 # From here untested methods are added
 def get_task_status(task_uuid):
     """return status of task"""
-    url = "{}tasks/{}/".format(LIZARD_URL, task_uuid)
+    url = f"{LIZARD_URL}tasks/{task_uuid}/"
     try:
         r = requests.get(url=url, auth=("__key__", get_api_key()))
         r.raise_for_status()
@@ -313,7 +313,7 @@ def get_task_status(task_uuid):
 def get_task_download_url(task_uuid):
     """return url of successful task"""
     if get_task_status(task_uuid) == "SUCCESS":
-        url = "{}tasks/{}/".format(LIZARD_URL, task_uuid)
+        url = f"{LIZARD_URL}tasks/{task_uuid}/"
         r = requests.get(url=url, auth=("__key__", get_api_key()))
         r.raise_for_status()
         return r.json()["result"]
@@ -322,7 +322,7 @@ def get_task_download_url(task_uuid):
 
 def download_file(url, path):
     """download url to specified path"""
-    logging.debug("Start downloading file: {}".format(url))
+    logging.debug(f"Start downloading file: {url}")
     r = requests.get(url, stream=True)
     r.raise_for_status()
     with open(path, "wb") as file:
@@ -335,8 +335,8 @@ def download_task(task_uuid, pathname=None):
     if get_task_status(task_uuid) == "SUCCESS":
         download_url = get_task_download_url(task_uuid)
         if pathname is None:
-            logging.debug("download_url: {}".format(download_url))
-            logging.debug("urlparse(download_url): {}".format(urlparse(download_url)))
+            logging.debug(f"download_url: {download_url}")
+            logging.debug(f"urlparse(download_url): {urlparse(download_url)}")
             pathname = os.path.basename(urlparse(download_url).path)
             logging.debug(pathname)
         download_file(download_url, pathname)
@@ -461,12 +461,12 @@ def download_raster(
                 logging.debug("Invalid scenario: supply a uuid string and bounding box")
         # Send task to lizard
         logging.debug("Creating task with the following parameters:")
-        logging.debug("raster: {}".format(raster))
-        logging.debug("projection: {}".format(projection))
-        logging.debug("resolution: {}".format(resolution))
-        logging.debug("scenario_instance: {}".format(scenario_instance))
-        logging.debug("bbox: {}".format(bbox))
-        logging.debug("time: {}".format(time))
+        logging.debug(f"raster: {raster}")
+        logging.debug(f"projection: {projection}")
+        logging.debug(f"resolution: {resolution}")
+        logging.debug(f"scenario_instance: {scenario_instance}")
+        logging.debug(f"bbox: {bbox}")
+        logging.debug(f"time: {time}")
         task = create_raster_task(
             raster,
             scenario_instance,
@@ -490,7 +490,7 @@ def download_raster(
         ):
             task_export.append({"uuid": task_id, "url": task_url, "pathname": pathname})
 
-        logging.debug("task_export: {}".format(task_export))
+        logging.debug(f"task_export: {task_export}")
         with open(export_task_csv, "w", newline="") as f:
             # using csv.writer method from CSV package
             field_names = ["uuid", "url", "pathname"]
@@ -512,15 +512,11 @@ def download_raster(
                     # task is a succes, return download url
                     try:
                         logging.debug(
-                            """Task succeeded, start
-                            downloading url: {}""".format(
-                                get_task_download_url(task_uuid)
-                            )
+                            f"""Task succeeded, start
+                            downloading url: {get_task_download_url(task_uuid)}"""
                         )
                         logging.debug(
-                            "Remaining tasks: {}".format(
-                                processed_list.count(False) - 1
-                            )
+                            f"Remaining tasks: {processed_list.count(False) - 1}"
                         )
                         download_task(task_uuid, pathname)
                         processed_list[index] = True
@@ -539,7 +535,7 @@ def download_raster(
                     pass
                 else:
                     logging.debug(
-                        "Task {} failed, status was: {}".format(task_uuid, task_status)
+                        f"Task {task_uuid} failed, status was: {task_status}"
                     )
                     processed_list[index] = True
         sleep(5)
@@ -681,21 +677,21 @@ def download_precipitation_raster(
 def download_raw_results(scenario_uuid, pathname=None):
     """downloads the 3Di NetCDF file of the supplied scenario"""
     url = get_netcdf_link(scenario_uuid)
-    logging.debug("Start downloading raw results: {}".format(url))
+    logging.debug(f"Start downloading raw results: {url}")
     download_file(url, pathname)
 
 
 def download_aggregated_results(scenario_uuid, pathname=None):
     """downloads the 3Di aggregated NetCDF file of the supplied scenario"""
     url = get_aggregation_netcdf_link(scenario_uuid)
-    logging.debug("Start downloading aggregated results: {}".format(url))
+    logging.debug(f"Start downloading aggregated results: {url}")
     download_file(url, pathname)
 
 
 def download_logging_results(scenario_uuid, pathname=None):
     """downloads the 3Di logging of the supplied scenario"""
     url = get_logging_link(scenario_uuid)
-    logging.debug("Start downloading logging results: {}".format(url))
+    logging.debug(f"Start downloading logging results: {url}")
     download_file(url, pathname)
 
 
@@ -703,7 +699,7 @@ def download_grid_administration(scenario_uuid, pathname=None):
     """downloads the 3Di grid administration (.h5 file) of
     the supplied scenario"""
     url = get_gridadmin_link(scenario_uuid)
-    logging.debug("Start downloading grid administration: {}".format(url))
+    logging.debug(f"Start downloading grid administration: {url}")
     download_file(url, pathname)
 
 
@@ -761,13 +757,13 @@ def get_raster_download_link(
     )
     task_uuid = task["task_id"]
 
-    logging.debug("Start waiting for task {} to finish".format(task_uuid))
+    logging.debug(f"Start waiting for task {task_uuid} to finish")
     task_status = get_task_status(task_uuid)
     processing = True
     while processing:
         task_status = get_task_status(task_uuid)
         if task_status in ("PENDING", "UNKNOWN", "STARTED", "RETRY"):
-            logging.debug("Still waiting for task {}".format(task_uuid))
+            logging.debug(f"Still waiting for task {task_uuid}")
             sleep(5)
         elif task_status == "SUCCESS":
             logging.debug("Task completed")
@@ -829,9 +825,7 @@ def get_temporal_raster_links(
             name_timestep = "_".join([name, timestep])
         else:
             # if not equal, indicate the datetime discrepancy in file name
-            name_timestep = "{}_get_{}_got_{}".format(
-                name, timestep_url_format, url_timestep
-            )
+            name_timestep = f"{name}_get_{timestep_url_format}_got_{url_timestep}"
         temporal_raster_urls[name_timestep] = download_url
     return temporal_raster_urls
 
@@ -884,7 +878,7 @@ def get_raster_timesteps(raster, interval_hours=None):
         return [None]
     if not interval_hours:
         # assume interval of store (rounded minutes) and return first, middle and last raster
-        url = "{}rasters/{}/timesteps/".format(LIZARD_URL, raster_uuid)
+        url = f"{LIZARD_URL}rasters/{raster_uuid}/timesteps/"
         timesteps_json = request_json_from_url(url)
         timesteps_ms = timesteps_json["steps"]
         # only return first, middle and last raster
@@ -919,7 +913,7 @@ def get_raster_timesteps(raster, interval_hours=None):
             timestep_obj_list.append(first_timestamp)
             first_timestamp += interval
 
-        if not last_timestamp in timestep_obj_list:
+        if last_timestamp not in timestep_obj_list:
             timestep_obj_list.append(last_timestamp)
 
         timesteps = [
@@ -986,7 +980,7 @@ def resume_download_tasks(task_file, overwrite=False):
         for row in reader:
             unprocessed_tasks.append(row)
             task_url = row["url"]
-            logging.debug("Reading task file, line: {}".format(task_url))
+            logging.debug(f"Reading task file, line: {task_url}")
 
     while len(unprocessed_tasks) > 0:
         for task in unprocessed_tasks:
@@ -1019,6 +1013,6 @@ def resume_download_tasks(task_file, overwrite=False):
                 pass
             else:
                 logging.debug(
-                    "Task {} failed, status was: {}".format(uuid, task_status)
+                    f"Task {uuid} failed, status was: {task_status}"
                 )
         sleep(5)

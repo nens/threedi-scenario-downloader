@@ -1,8 +1,7 @@
-# -*- coding: utf-8 -*-
 """Tests for downloader.py"""
-from threedi_scenario_downloader import downloader
-import configparser
 import os
+
+from threedi_scenario_downloader import downloader
 
 SCENARIO_UUID = "4d3c9b6d-58d0-43cd-a850-8e6c2982d14f"
 SCENARIO_NAME = "threedi-scenario-download-testmodel-EV"
@@ -143,5 +142,5 @@ def test_get_raster_from_json():
 
 
 def test_request_json_from_url():
-    url = "https://demo.lizard.net/api/v4/scenarios/{}/".format(SCENARIO_UUID)
+    url = f"https://demo.lizard.net/api/v4/scenarios/{SCENARIO_UUID}/"
     assert isinstance(downloader.request_json_from_url(url, params=None), dict)

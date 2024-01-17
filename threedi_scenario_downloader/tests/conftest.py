@@ -1,8 +1,9 @@
 """Test setup for all the tests, handled automatically by pytest"""
-import pytest
 from pathlib import Path
-from threedi_scenario_downloader import downloader
 
+import pytest
+
+from threedi_scenario_downloader import downloader
 
 API_KEY_FILENAME = "test_api_key.txt"
 

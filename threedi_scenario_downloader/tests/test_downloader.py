@@ -1,10 +1,9 @@
-# -*- coding: utf-8 -*-
 """Tests for downloader.py"""
-from threedi_scenario_downloader import downloader
-import configparser
+
 import pytest
 from requests.exceptions import HTTPError
 
+from threedi_scenario_downloader import downloader
 
 SCENARIO_UUID = "4d3c9b6d-58d0-43cd-a850-8e6c2982d14f"
 SCENARIO_NAME = "threedi-scenario-download-testmodel-EV"
