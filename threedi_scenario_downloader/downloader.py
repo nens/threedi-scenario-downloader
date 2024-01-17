@@ -307,9 +307,7 @@ def get_task_status(task_uuid) -> str:
         r.raise_for_status()
         return r.json()["status"]
     except requests.exceptions.RequestException:
-        log.exception(
-            f"Error while requesting task status for task {task_uuid}"
-        )
+        log.exception(f"Error while requesting task status for task {task_uuid}")
         return "UNKNOWN"
 
 
@@ -955,9 +953,8 @@ def check_temporal_request(scenario_instance, time):
 
     if not time_in_range(start, end, requested_time):
         raise ValueError(
-            "Time requested ({0}) not in temporal range of scenario ({1} - {2}), choose a different time.".format(
-                time, start_stamp, end_stamp
-            )
+            f"Time requested ({time}) not in temporal range of scenario "
+            f"({start_stamp} - {end_stamp}), choose a different time."
         )
 
 
