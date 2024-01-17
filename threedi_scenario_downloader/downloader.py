@@ -49,7 +49,7 @@ ARRIVAL_TIME = "depth-first-dtri"
 TOTAL_DAMAGE = "total-damage"
 
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 
 def set_api_key(api_key: str):
