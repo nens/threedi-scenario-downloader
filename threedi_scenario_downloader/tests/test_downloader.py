@@ -42,10 +42,9 @@ def test_get_raster_temporal():
 
 def test_get_raster_url_from_non_existing_scenario():
     with pytest.raises(HTTPError):
-        raster = downloader.get_raster(
+        downloader.get_raster(
             "3d3c9b6d-58d0-43cd-a850-8e6c2982d14f", "depth-max-dtri"
         )
-        assert raster is not None
 
 
 def test_create_raster_task():
