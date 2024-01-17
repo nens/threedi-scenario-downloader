@@ -20,7 +20,7 @@ jobs:
         with:
           python-version: "3.11"
 
-     - name: Install python dependencies
+      - name: Install python dependencies
         run: |
           python3 -m venv venv
           venv/bin/pip install -r requirements.txt
@@ -30,6 +30,6 @@ jobs:
           venv/bin/ruff check threedi_scenario_downloader
           venv/bin/ruff format threedi_scenario_downloader
 
+      # TODO: add api key
       - name: Run pytest
-        # TODO: add api key
         run: venv/bin/pytest
