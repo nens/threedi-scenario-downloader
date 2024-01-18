@@ -98,7 +98,8 @@ Run the tests regularly. This also checks reports coverage::
 
 Before runningg the tests, create a file (in this directory) called
 ``test_api_key.txt`` and add a lizard **api key**. Just the key, on
-one line. The tests will complain otherwise.
+one line. The tests will complain otherwise. In the github action,
+this .txt file is filled with the ``TEST_API_KEY`` github secret.
 
 Contact Reinout when you need a new release, there's no automatic
 upload to pypi yet so he has to upload it.
