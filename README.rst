@@ -96,7 +96,7 @@ Run the tests regularly. This also checks reports coverage::
 
   $ venv/bin/pytest
 
-Before runningg the tests, create a file (in this directory) called
+Before running the tests, create a file (in this directory) called
 ``test_api_key.txt`` and add a lizard **api key**. Just the key, on
 one line. The tests will complain otherwise. In the github action,
 this .txt file is filled with the ``TEST_API_KEY`` github secret.
