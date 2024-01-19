@@ -14,3 +14,8 @@ addopts = ["--cov", "--cache-clear", "threedi_scenario_downloader"]
 
 [tool.zestreleaser]
 release = true
+
+[tool.pyright]
+include = "threedi_scenario_downloader"
+venvPath = "."
+venv = "venv"

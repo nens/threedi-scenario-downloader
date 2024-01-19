@@ -1,5 +1,0 @@
-{"include": ["threedi_scenario_downloader"],
- "exclude": ["venv"],
- "venvPath": ".",
- "venv": "venv"
-}
