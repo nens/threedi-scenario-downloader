@@ -5,6 +5,7 @@ target-version = "py38"
 [tool.ruff.lint]
 # Default select: ["E4", "E7", "E9", "F"]
 select = ["E4", "E7", "E9", "F", "I", "UP"]
+# TODO: enable "C901", mccabe complexity analysis.
 
 [tool.ruff.lint.isort]
 known-first-party = ["threedi_scenario_downloader"]
