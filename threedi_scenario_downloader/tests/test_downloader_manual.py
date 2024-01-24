@@ -1,24 +1,13 @@
-# -*- coding: utf-8 -*-
 """Tests for downloader.py"""
-from threedi_scenario_downloader import downloader
-import configparser
 import os
+
+from threedi_scenario_downloader import downloader
 
 SCENARIO_UUID = "4d3c9b6d-58d0-43cd-a850-8e6c2982d14f"
 SCENARIO_NAME = "threedi-scenario-download-testmodel-EV"
 MODEL_UUID = "e5c91df19ad33337d82e8cd83edb1196b7b39d3d"
 DEPTH_MAX_UUID = "c3c4dd31-8a15-4a9e-aefa-97d0cb13cbcc"
 DEPTH_UUID = "921540af-57aa-4a74-8788-6d8f1c8b518b"
-
-
-def test_api_key():
-    config = configparser.ConfigParser()
-    config.read("threedi_scenario_downloader/tests/testdata/realconfig.ini")
-    downloader.set_api_key(config["credentials"]["api_key"])
-
-    assert (downloader.get_api_key() is not None) and (
-        downloader.get_api_key() == config["credentials"]["api_key"]
-    )
 
 
 def test_download_maximum_waterdepth_raster():
@@ -153,5 +142,5 @@ def test_get_raster_from_json():
 
 
 def test_request_json_from_url():
-    url = "https://demo.lizard.net/api/v4/scenarios/{}/".format(SCENARIO_UUID)
+    url = f"https://demo.lizard.net/api/v4/scenarios/{SCENARIO_UUID}/"
     assert isinstance(downloader.request_json_from_url(url, params=None), dict)

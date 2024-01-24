@@ -1,7 +1,8 @@
 -e .[test]
 
 # dev packages
-flake8
 black
-zest.releaser
 coveralls
+flake8
+ruff
+zest.releaser

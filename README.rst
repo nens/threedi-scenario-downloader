@@ -84,19 +84,25 @@ We're installed with regular pip and virtualenv. Create a virtualenv and call pi
   $ python3 -m venv venv
   $ venv/bin/pip install -r requirements.txt
 
-In order to get nicely formatted python files without having to spend manual
-work on it, run the following command periodically::
+In order to get nicely formatted python files without having to spend
+manual work on it, run the following commands periodically::
 
-  $ venv/bin/black threedi_scenario_downloader
+  $ venv/bin/ruff check threedi_scenario_downloader --fix
+  $ venv/bin/ruff format threedi_scenario_downloader
 
-Run the tests regularly. This also checks with pyflakes, black and it reports
-coverage. Pure luxury::
+The first one also reports syntax-like errors that you'll have to fix.
+
+Run the tests regularly. This also checks reports coverage::
 
   $ venv/bin/pytest
 
-The tests **used** to run on travis-ci.org, but we don't use that service
-anymore. Also, new releases were automatically added to pypi there. For now,
-contact Reinout when you need a new release.
+Before running the tests, create a file (in this directory) called
+``test_api_key.txt`` and add a lizard **api key**. Just the key, on
+one line. The tests will complain otherwise. In the github action,
+this .txt file is filled with the ``TEST_API_KEY`` github secret.
+
+Contact Reinout when you need a new release, there's no automatic
+upload to pypi yet so he has to upload it.
 
 If you need a new dependency (like `requests`), add it in `setup.py` in
 `install_requires`. Afterwards, run install again to actuall install your
