@@ -7,6 +7,8 @@ Changelog of threedi-scenario-downloader
 - Improved test setup: a pytest fixture automatically sets up the api
   key. Add one to ``test_api_key.txt``.
 
+- When downloading files from amazon S3, we don't send along lizard authentication headers.
+
 
 1.3 (2024-01-17)
 ----------------
