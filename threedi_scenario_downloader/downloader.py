@@ -320,7 +320,11 @@ def get_task_download_url(task_uuid):
 def download_file(url, path):
     """download url to specified path"""
     logger.debug(f"Start downloading file: {url}")
-    r = requests.get(url, stream=True)
+    if "amazon" not in url:
+        r = requests.get(url, auth=("__key__", get_api_key()), stream=True)
+    else:
+        # Amazon s3 request: don't send lizard's auth headers.
+        r = requests.get(url, stream=True)
     r.raise_for_status()
     with open(path, "wb") as file:
         for chunk in r.iter_content(1024 * 1024 * 10):
