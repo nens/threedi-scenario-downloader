@@ -1,7 +1,7 @@
 Changelog of threedi-scenario-downloader
 ===================================================
 
-1.4 (unreleased)
+1.4 (2024-01-26)
 ----------------
 
 - Improved test setup: a pytest fixture automatically sets up the api
